@@ -1,0 +1,46 @@
+{
+  "app": [
+    {
+      "old": "import {createAlcoholViewModel} from '../features/juego-trivia/etapas/alcohol/alcoholViewModel.js';\n",
+      "new": "import {createAlcoholViewModel} from '../features/juego-trivia/etapas/alcohol/alcoholViewModel.js';\nimport {createFrutasViewModel} from '../features/juego-trivia/etapas/frutas/frutasViewModel.js';\n"
+    },
+    {
+      "old": "const alcoholVM = createAlcoholViewModel({state:partida, maxPick:MAX_PICK});",
+      "new": "const alcoholVM = createAlcoholViewModel({state:partida, maxPick:MAX_PICK});\nconst frutasVM = createFrutasViewModel({state:partida, maxPick:MAX_PICK});"
+    },
+    {
+      "old": "  if (stepKey === 'fruta' && item.v === 'cualquiera'){\n    if (input.checked){ partida.fruitAny = true; set.clear(); }\n    else partida.fruitAny = false;\n    return;\n  }\n  if (stepKey === 'fruta') partida.fruitAny = false;",
+      "new": "  if (stepKey === 'fruta'){\n    input.checked = frutasVM.setSelection(item.v, input.checked);\n    return;\n  }"
+    },
+    {
+      "old": "    el, app, STEPS, MAX_PICK, sel, partidaVM, alcoholVM,",
+      "new": "    el, app, STEPS, MAX_PICK, sel, partidaVM, alcoholVM, frutasVM,"
+    }
+  ],
+  "game": [
+    {
+      "old": "import {createAlcoholView} from '../etapas/alcohol/alcoholView.js';\n",
+      "new": "import {createAlcoholView} from '../etapas/alcohol/alcoholView.js';\nimport {createFrutasView} from '../etapas/frutas/frutasView.js';\nimport {bindFrutasGestures} from '../etapas/frutas/frutasGestos.js';\n"
+    },
+    {
+      "old": "  function flip(key, value){\n    const any = key === 'fruta' && value === 'cualquiera';\n    const on = any ? api.fruitAny : api.sel[key].has(value);\n    if (!on && !any && api.sel[key].size >= api.MAX_PICK){\n      const why = document.getElementById('why');\n      if (why){\n        why.hidden = false;\n        why.textContent = 'Cinco es el tope.';\n      }\n      return;\n    }\n    const adding = !on;\n    api.togglePick(key, {v:value, t:value}, {checked:!on});\n    if (adding && (any ? api.fruitAny : api.sel[key].has(value))){\n      freshKey = 'f:' + value;\n    }\n    api.moveFocus = false;\n    api.persist();\n    renderStage();\n    focusPick(value);\n  }\n",
+      "new": "  function toggleFruit(value){\n    const result = api.frutasVM.toggle(value);\n    if (result.status === 'limit'){\n      const why = document.getElementById('why');\n      if (why){\n        why.hidden = false;\n        why.textContent = 'Cinco es el tope.';\n      }\n      return;\n    }\n    if (result.added) freshKey = 'f:' + value;\n    api.moveFocus = false;\n    api.persist();\n    renderStage();\n    focusPick(value);\n  }\n"
+    },
+    {
+      "old": "    if (api.sel.fruta.has(value) || api.fruitAny) return;\n    if (api.sel.fruta.size >= api.MAX_PICK) return;\n    freshKey = 'f:' + value;\n    api.togglePick('fruta', {v:value, t:value}, {checked:true});",
+      "new": "    if (!api.frutasVM.add(value)) return;\n    freshKey = 'f:' + value;"
+    },
+    {
+      "old": "  function token(key, item, className){\n    const any = key === 'fruta' && item.v === 'cualquiera';\n    const on = any ? api.fruitAny : api.sel[key].has(item.v);\n    const mark = 'f:';\n    const b = api.el('button', {\n      type:'button',\n      class: cls(className, on && 'is-on', freshKey === mark + item.v && 'is-fresh'),\n      'data-pick': item.v,\n      'aria-pressed': on ? 'true' : 'false'\n    });\n    if (className === 'fruit' && item.v !== 'cualquiera'){\n      b.append(fruitIconNode(item.v), api.el('span', {class:'fruit-label'}, item.t));\n    } else b.textContent = item.t;\n    b.addEventListener('click', function(){\n      if (className === 'fruit' && Date.now() < dragLock) return;\n      flip(key, item.v);\n    });\n    return b;\n  }\n  function alcoholNode(){",
+      "new": "  function alcoholNode(){"
+    },
+    {
+      "old": "  function fruitNode(){\n    const wrap = api.el('div',{class:'play fruit-tray'});\n    const tray = api.el('div',{class:'fruits','role':'group','aria-label':'Frutas para tu mezcla'});\n    api.STEPS[1].groups.slice(1).forEach(function(group){\n      group.o.forEach(function(raw){ tray.append(token('fruta',api.asItem(raw),'fruit')); });\n    });\n    wrap.append(tray,token('fruta',{v:'cualquiera',t:'Sorpréndeme: la que sea'},'choice'));\n    return wrap;\n  }\n",
+      "new": "  function fruitNode(){\n    return createFrutasView({\n      el:api.el, groups:api.STEPS[1].groups, asItem:api.asItem,\n      viewModel:api.frutasVM, isFresh:value => freshKey === 'f:' + value,\n      fruitIconNode, dragLocked:() => Date.now() < dragLock, onToggle:toggleFruit\n    });\n  }\n"
+    },
+    {
+      "old": "  function bindFruit(root){\n    if (!interactOn() || window.matchMedia('(pointer: coarse)').matches) return;\n    const glass = root.querySelector('.glass-build');\n    root.querySelectorAll('.fruit').forEach(function(node){\n      window.interact(node).draggable({\n        listeners:{\n          start: function(event){ event.target.dataset.moved = '0'; },\n          move: function(event){\n            const t = event.target;\n            const x = (parseFloat(t.dataset.x) || 0) + event.dx;\n            const y = (parseFloat(t.dataset.y) || 0) + event.dy;\n            t.dataset.x = String(x);\n            t.dataset.y = String(y);\n            t.dataset.moved = String((parseFloat(t.dataset.moved) || 0) + Math.abs(event.dx) + Math.abs(event.dy));\n            t.style.transform = 'translate(' + x + 'px,' + y + 'px)';\n          },\n          end: function(event){\n            const t = event.target;\n            const moved = parseFloat(t.dataset.moved) || 0;\n            const value = t.getAttribute('data-pick');\n            if (moved > 10){\n              dragLock = Date.now() + 350;\n              if (glass && hit(t, glass) && value && !api.sel.fruta.has(value)) addFruit(value);\n              else resetFruitToken(t);\n              return;\n            }\n            dragLock = Date.now() + 350;\n            if (value) flip('fruta', value);\n          }\n        }\n      });\n    });\n  }\n",
+      "new": "  function bindFruit(root){\n    bindFrutasGestures({\n      root, interactOn, hit, resetFruitToken, hasFruit:value => api.sel.fruta.has(value),\n      addFruit, onToggle:toggleFruit, setDragLock:value => { dragLock = value; }\n    });\n  }\n"
+    }
+  ]
+}

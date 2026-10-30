@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#283618">
+<title>¿Qué tomamos?</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Fraunces:opsz,wght@9..144,500..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/src/shared/styles/base.css">
+<link rel="stylesheet" href="/src/features/juego-trivia/views/vaso-dialogo.css">
+<link rel="stylesheet" href="/src/features/auth-cuenta/views/perfil.css">
+<link rel="stylesheet" href="/src/features/juego-trivia/views/preguntas.css">
+</head>
+<body class="at-welcome">
+<nav class="profile-entry" aria-label="Tu cuenta"><button type="button" id="open-profile">Mi perfil</button></nav>
+<section class="welcome" id="welcome-screen" aria-labelledby="welcome-line">
+  <div class="welcome-conversation">
+    <div class="welcome-vessel" id="welcome-vessel" aria-hidden="true"></div>
+    <div class="welcome-copy">
+      <h1 class="welcome-line" id="welcome-line" tabindex="-1">Vamos a ver qué cóctel va contigo.</h1>
+    </div>
+    <button class="welcome-start" id="welcome-start" type="button" aria-describedby="welcome-hint">Descubrir mi cóctel</button>
+  </div>
+  <p class="welcome-age">Solo para mayores de edad.</p>
+</section>
+<noscript><p class="bar">¿Qué tomamos? necesita JavaScript para armar tu trago.</p></noscript>
+<main id="app" hidden></main>
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>

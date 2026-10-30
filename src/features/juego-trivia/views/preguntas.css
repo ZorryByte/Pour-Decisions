@@ -1,0 +1,30 @@
+/* El mismo vaso y las mismas opciones; tres formas de conversar. */
+.conversation{display:flex;flex-direction:column;gap:16px}
+.question-progress{font-weight:600;color:var(--ground)}
+.question-meter{display:block;width:100%;height:5px;border:0;appearance:none;background:var(--surface-light);color:var(--olive)}
+.question-meter::-webkit-progress-bar{background:var(--surface-light)}
+.question-meter::-webkit-progress-value{background:var(--olive)}
+.question-meter::-moz-progress-bar{background:var(--olive)}
+.question-format{color:var(--ground);font-size:15px}
+.question-options{display:grid;gap:12px}
+.question-options.format-si_no{grid-template-columns:repeat(2,minmax(0,1fr))}
+.question-options .question-option{min-height:60px;white-space:normal;overflow-wrap:anywhere;font-size:16px;line-height:1.4}
+.question-options.format-si_no .question-option{text-align:center;font-weight:600}
+.question-options.format-dilema .question-option{min-height:76px}
+.question-options .question-option.is-on{background:var(--amber);color:var(--ground);border-color:var(--deep)}
+.question-actions{margin-top:8px;flex-wrap:wrap}
+.question-next:disabled{opacity:.55;cursor:not-allowed}
+.question-extras{display:flex;gap:20px;flex-wrap:wrap}
+.question-notice{font-size:15px;line-height:1.5;color:var(--ground)}
+.quiz.stage.step-5 h1{max-width:23ch;font-size:clamp(29px,3.1vw,44px);line-height:1.12;text-wrap:pretty}
+.quiz.stage.step-5 #stage-q:focus{outline:none}
+.question-closing{max-width:58ch;margin-top:20px;font-size:16px;line-height:1.5}
+@media(max-width:799px){
+  .quiz.stage.step-5{gap:20px}
+  .quiz.stage.step-5 .play-col{padding-top:0}
+  .quiz.stage.step-5 h1{font-size:30px;margin-bottom:20px}
+  .question-options .question-option{min-height:56px}
+  .question-options.format-dilema .question-option{min-height:66px}
+  .question-actions{gap:18px}
+  .question-next{max-width:100%;white-space:normal}
+}

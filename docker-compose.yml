@@ -1,0 +1,42 @@
+services:
+  app:
+    build:
+      context: .
+      target: development
+    init: true
+    ports:
+      - "127.0.0.1:${APP_PORT:-5173}:5173"
+    environment:
+      VITE_SUPABASE_URL: ${VITE_SUPABASE_URL:-}
+      VITE_SUPABASE_ANON_KEY: ${VITE_SUPABASE_ANON_KEY:-}
+      VITE_USE_POLLING: ${VITE_USE_POLLING:-true}
+    volumes:
+      - .:/app
+      - app_node_modules:/app/node_modules
+
+  db:
+    profiles: ["sql-local"]
+    image: postgres:16-alpine
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-54322}:5432"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-cocteles}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Define POSTGRES_PASSWORD en .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/local/00-supabase-compat.sql:/docker-entrypoint-initdb.d/00-supabase-compat.sql:ro
+      - ./database/migrations/001-base.sql:/docker-entrypoint-initdb.d/10-base.sql:ro
+      - ./database/migrations/002-estilos.sql:/docker-entrypoint-initdb.d/20-estilos.sql:ro
+      - ./database/migrations/003-juego.sql:/docker-entrypoint-initdb.d/30-juego.sql:ro
+      - ./database/migrations/004-perfiles.sql:/docker-entrypoint-initdb.d/40-perfiles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  postgres_data:
+  app_node_modules:

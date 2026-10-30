@@ -1,0 +1,18 @@
+[
+  {
+    "old": "",
+    "new": "import {createFrutasBarra} from '../etapas/frutas/frutasBarra.js';\n"
+  },
+  {
+    "old": "",
+    "new": "  let fruitBarScene = null;\n"
+  },
+  {
+    "old": "",
+    "new": "    if (fruitBarScene){ fruitBarScene.destroy(); fruitBarScene = null; }\n"
+  },
+  {
+    "old": "",
+    "new": "    if (api.step === 1){\n      fruitBarScene = createFrutasBarra({\n        el:api.el, groups:api.STEPS[1].groups, asItem:api.asItem,\n        viewModel:api.frutasVM, selected:() => api.sel.fruta,\n        bases:[...api.sel.alcohol], any:() => api.fruitAny, maxPick:api.MAX_PICK,\n        fruitIconNode, glassBuild, color:liquidColor,\n        onChange:() => api.persist(), onNext:() => goNext(), onBack:goBack\n      });\n      const quiz = api.el('div', {class:'quiz stage step-1'}, nav, fruitBarScene.node);\n      api.app.replaceChildren(quiz);\n      stopStageSpeech();\n      lastPin = api.step; freshKey = ''; api.persist();\n      api.placeFocus(quiz.querySelector('h1'));\n      if (entered) window.scrollTo(0,0);\n      return;\n    }\n"
+  }
+]

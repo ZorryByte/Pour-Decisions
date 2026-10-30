@@ -1,0 +1,33 @@
+{
+  "name": "cocteles",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check:deploy": "node scripts/verificar-despliegue.mjs",
+    "build:vercel": "npm run check:deploy && npm run build",
+    "preview": "vite preview",
+    "test": "node --test tests/*.test.cjs",
+    "test:browser": "node tests/recorrido-browser.mjs && npm run test:regresion",
+    "test:funcionamiento": "node tests/funcionamiento-browser.mjs",
+    "test:paridad": "node tests/paridad-browser.mjs",
+    "test:perfil": "node tests/perfil-browser.mjs",
+    "test:vip": "node tests/vip-browser.mjs",
+    "test:frutas": "node tests/frutas-barra-browser.mjs",
+    "test:recorrido": "node tests/recorrido-browser.mjs",
+    "test:regresion": "node tests/paridad-browser.mjs && node tests/perfil-browser.mjs && node tests/funcionamiento-browser.mjs"
+  },
+  "devDependencies": {
+    "vite": "~8.1.0"
+  },
+  "dependencies": {
+    "canvas-confetti": "1.9.4",
+    "gsap": "3.15.0",
+    "interactjs": "1.10.28"
+  },
+  "type": "module"
+}

@@ -1,0 +1,42 @@
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const vm=require('node:vm');
+const path=require('node:path');
+const code=fs.readFileSync(path.join(__dirname,'../src/features/juego-trivia/models/insignias.js'),'utf8');
+const records=new Map(); let blocked=false;
+const storage={getItem:k=>records.get(k)||null,setItem:(k,v)=>{if(blocked)throw Error('blocked');records.set(k,v);},removeItem:k=>records.delete(k)};
+function create(){
+  const context=vm.createContext({window:{},localStorage:storage,sessionStorage:storage,location:{search:'?evento=prueba'},URLSearchParams});
+  vm.runInContext(code,context);return context.window.Insignias;
+}
+let engine=create();
+function p(account){return {badgeAccountId:account,draftName:'Invitado',current:{n:'Prueba',i:[]},fruitAny:false,sel:{alcohol:new Set(['Ron']),fruta:new Set(['Piña','Coco']),sabor:new Set(['Dulce']),fuerza:new Set(['Suave']),plan:new Set(),alergia:new Set(['ninguna'])}};}
+const guest=p(null);
+engine.collect(guest);guest.sel.fuerza=new Set(['Fuerte']);engine.collect(guest);guest.sel.alcohol=new Set(['Whisky']);engine.collect(guest);
+const earned=Array.from(engine.collection(guest),b=>b.id);assert(earned.length>=4);
+const before=records.size;engine.collection(guest);assert.equal(records.size,before,'Consultar no obtiene insignias nuevas');
+const a=p('cuenta-a'),b=p('cuenta-b');
+assert.equal(engine.collection(a).length,0,'No asocia insignias de invitado sin pedirlo');
+assert.equal(engine.chooseFeatured(a,[earned[0]]).error,'locked','No destaca insignias ajenas o pendientes');
+assert(engine.guestCollection(a).length>=4);
+assert(engine.importGuest(a).ok,'Importa insignias explícitamente');
+assert.equal(engine.guestCollection(a).length,0,'No pueden reclamarlas dos cuentas');
+assert.equal(engine.collection(b).length,0,'La otra cuenta no hereda logros');
+assert(engine.chooseFeatured(a,earned.slice(0,3)).ok);
+assert.equal(engine.featured(a).length,3);
+assert.equal(engine.chooseFeatured(a,earned.slice(0,4)).error,'limit');
+assert.equal(engine.featured(a).length,3,'Rechazar la cuarta conserva las tres');
+assert.equal(engine.chooseFeatured(a,['no-existe']).error,'locked');
+assert.equal(engine.featured(a).length,3);
+engine=create();assert.deepEqual(Array.from(engine.featured(a)),earned.slice(0,3),'Persiste tras recargar');
+assert.equal(engine.featured(b).length,0,'No muestra selección de otra cuenta');
+assert(engine.chooseFeatured(a,[earned[2],earned[3]]).ok,'Cambiar y quitar');
+assert.deepEqual(Array.from(engine.featured(a)),[earned[2],earned[3]]);
+assert(engine.chooseFeatured(a,[]).ok,'Permite no destacar ninguna');
+assert.equal(engine.featured(a).length,0);
+assert(engine.chooseFeatured(a,[earned[0]]).ok);
+blocked=true;assert.equal(engine.chooseFeatured(a,[earned[1]]).error,'storage');
+assert.deepEqual(Array.from(engine.featured(a)),[earned[0]],'Fallo de guardado conserva la selección anterior');
+assert.equal(engine.chooseFeatured(a,null).error,'invalid');
+assert.equal(engine.chooseFeatured(a,[null]).error,'invalid');
+console.log('PASS: máximo tres, solo obtenidas, cambio, retirada, recarga, aislamiento por cuenta, importación explícita e idempotente y fallo de almacenamiento sin perder selección.');

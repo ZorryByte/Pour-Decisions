@@ -1,0 +1,42 @@
+{
+  "src/app/iniciarSistema.js": [
+    {
+      "old": "const requestedProfile = location.hash === '#perfil';\nloadPersona();\nloadWizard();",
+      "new": "const requestedProfile = !reloaded && location.hash === '#perfil';\nif (reloaded){\n  // F5 empieza una partida nueva; la cuenta y sus datos guardados se conservan.\n  try { sessionStorage.removeItem(WKEY); } catch (e) { /* se ignora la partida anterior */ }\n  history.replaceState(null, '', location.pathname + location.search);\n  history.scrollRestoration = 'manual';\n}\nloadPersona();\nif (!reloaded) loadWizard();"
+    },
+    {
+      "old": "if (reloaded && !requestedProfile && window.Preguntas && Preguntas.snapshot()){\n  welcomeOpen = false;\n  welcomeScreen.hidden = true;\n  app.hidden = false;\n  document.body.classList.remove('at-welcome');\n  reveal = false;\n  render();\n} else {\n  showWelcome();\n  render();\n}",
+      "new": "showWelcome();\nrender();"
+    },
+    {
+      "old": "function matchPercent(c){ return recomendacion.matchPercent(c, sel, partida.fruitAny); }\n\nfunction pctLabel(c){\n  return matchPercent(c) + '% parecido';\n}\n\nfunction drinkRecipeBlocks(c){\n",
+      "new": "function matchPercent(c){ return recomendacion.matchPercent(c, sel, partida.fruitAny); }\n\nfunction pctLabel(c){\n  return matchPercent(c) + '% por ingredientes';\n}\n\nfunction drinkRecipeBlocks(c){\n"
+    },
+    {
+      "old": "  function blocked(){ return partidaVM.simpleBlocked(); }\n  function sync(){\n    const off = blocked();\n    const label = pickLabel(s.k);\n    cap.hidden = !label;\n    cap.textContent = label;\n",
+      "new": "  function blocked(){ return partidaVM.simpleBlocked(); }\n  function sync(){\n    const off = blocked();\n    why.textContent = sel.alergia.has('otra') && s.k === 'alergia'\n      ? 'Tu otra restricción necesita revisión con quien prepara las bebidas. Por ahora no podemos recomendarte una receta. Conservamos tus elecciones.'\n      : (s.multi ? 'Marca al menos uno.' : 'Elige uno para seguir.');\n    const label = pickLabel(s.k);\n    cap.hidden = !label;\n    cap.textContent = label;\n"
+    },
+    {
+      "old": "    if (result === 'advanced'){ render(); return; }\n    if (result === 'empty'){\n      why.hidden = false;\n      why.textContent = 'Con esas alergias no queda un trago en la carta. Vuelve y quita alguna.';\n      return;\n    }\n    saved = false;\n",
+      "new": "    if (result === 'advanced'){ render(); return; }\n    if (result === 'empty'){\n      why.hidden = false;\n      why.textContent = 'No encontramos una receta con estas restricciones y gustos. Conserva tus restricciones y prueba otra base o fruta.';\n      return;\n    }\n    saved = false;\n"
+    },
+    {
+      "old": "  });\n  recipe.append(recipeColumns);\n  follow.append(recipe);\n  const others = ranked().filter(r => r.n !== c.n).slice(0, 8);\n  const more = el('section', {class:'block result-more'});\n  more.append(el('h2', {}, 'Otros parecidos'));\n  if (!others.length){\n    more.append(el('p', {class:'after'}, 'No hay otro que encaje con lo que marcaste.'));\n  } else {\n    const list = el('div', {class:'others'});\n    others.forEach(r => {\n      const btn = el('button', {class:'other', type:'button'},\n        el('span', {},\n          r.n,\n",
+      "new": "  });\n  recipe.append(recipeColumns);\n  follow.append(recipe);\n  const others = ranked().filter(r => r.n !== c.n);\n  const more = el('section', {class:'block result-more'});\n  more.append(el('h2', {}, 'Otros parecidos'));\n  more.append(el('p', {class:'after'}, 'El porcentaje compara bases, frutas y estilos. La fuerza orientativa ajusta el orden: no forma parte del porcentaje.'));\n  if (!others.length){\n    more.append(el('p', {class:'after'}, 'No hay otro que encaje con lo que marcaste.'));\n  } else {\n    const list = el('div', {class:'others', id:'other-results'});\n    const count = el('p', {class:'after', role:'status', 'aria-live':'polite'});\n    const showMore = el('button', {class:'text', type:'button', 'aria-controls':'other-results'}, 'Ver más recetas');\n    let shown = 0;\n    function appendBatch(focus = false){\n      const batch = others.slice(shown, shown + 8);\n      let first;\n      batch.forEach(r => {\n      const btn = el('button', {class:'other', type:'button'},\n        el('span', {},\n          r.n,\n"
+    },
+    {
+      "old": "      );\n      btn.addEventListener('click', () => openDrinkCard(r));\n      list.append(btn);\n    });\n    more.append(list);\n  }\n  follow.append(more);\n\n",
+      "new": "      );\n      btn.addEventListener('click', () => openDrinkCard(r));\n      list.append(btn);\n      first ||= btn;\n      });\n      shown += batch.length;\n      count.textContent = 'Mostrando ' + shown + ' de ' + others.length + ' recetas alternativas.';\n      showMore.hidden = shown >= others.length;\n      if (focus && first) first.focus({preventScroll:true});\n    }\n    showMore.addEventListener('click', () => appendBatch(true));\n    appendBatch();\n    more.append(list, count, showMore);\n  }\n  follow.append(more);\n\n"
+    }
+  ],
+  "src/features/juego-trivia/views/juego.js": [
+    {
+      "old": "  }\n  function blocked(){ return api.partidaVM.blocked(); }\n  function whyText(){\n    if (api.step === 5 && api.sel.plan.size && !api.ranked().length){\n      return 'No encontramos un trago compatible. Conserva tus restricciones y prueba otras frutas o una base diferente.';\n    }\n",
+      "new": "  }\n  function blocked(){ return api.partidaVM.blocked(); }\n  function whyText(){\n    if (api.step === 4 && api.sel.alergia.has('otra')){\n      return 'Tu otra restricción necesita revisión con quien prepara las bebidas. Por ahora no podemos recomendarte una receta. Conservamos tus elecciones.';\n    }\n    if (api.step === 5 && api.sel.plan.size && !api.ranked().length){\n      return 'No encontramos un trago compatible. Conserva tus restricciones y prueba otras frutas o una base diferente.';\n    }\n"
+    },
+    {
+      "old": "    try { localStorage.setItem(key, JSON.stringify([...set])); } catch (e) { /* el conteo es de esta visita */ }\n  }\n  function phrase(nombre, pct){\n    const estilo = [...api.sel.sabor][0];\n    if (pct < 40) return 'Tú y ' + nombre + ' se cruzan en la barra.';\n    if (estilo === 'Dulce') return 'Tú y ' + nombre + ' comparten el amor por lo dulce.';\n    if (estilo === 'Ácido') return 'Tú y ' + nombre + ' coinciden en lo ácido.';\n    if (estilo === 'Cremoso') return 'Tú y ' + nombre + ' van por lo cremoso.';\n    if (estilo === 'Refrescante') return 'Tú y ' + nombre + ' quieren lo mismo: algo frío.';\n    return 'Tú y ' + nombre + ' van por el mismo lado de la barra.';\n  }\n  function matchesBlock(){\n    const wrap = api.el('section', {class:'block result-matches'});\n",
+      "new": "    try { localStorage.setItem(key, JSON.stringify([...set])); } catch (e) { /* el conteo es de esta visita */ }\n  }\n  function phrase(nombre, pct){\n    if (pct < 40) return 'Tú y ' + nombre + ' se cruzan en la barra.';\n    return 'Tú y ' + nombre + ' tienen gustos en común.';\n  }\n  function matchesBlock(){\n    const wrap = api.el('section', {class:'block result-matches'});\n"
+    }
+  ]
+}

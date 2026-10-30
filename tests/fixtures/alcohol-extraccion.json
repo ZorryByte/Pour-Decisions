@@ -1,0 +1,46 @@
+{
+  "app": [
+    {
+      "old": "import {createPartidaViewModel} from '../features/juego-trivia/partida/partidaViewModel.js';\n",
+      "new": "import {createPartidaViewModel} from '../features/juego-trivia/partida/partidaViewModel.js';\nimport {createAlcoholViewModel} from '../features/juego-trivia/etapas/alcohol/alcoholViewModel.js';\n"
+    },
+    {
+      "old": "const partidaVM = createPartidaViewModel({",
+      "new": "const alcoholVM = createAlcoholViewModel({state:partida, maxPick:MAX_PICK});\nconst partidaVM = createPartidaViewModel({"
+    },
+    {
+      "old": "  if (stepKey === 'alcohol' && item.v === 'Sin alcohol'){\n    if (input.checked){ set.clear(); set.add('Sin alcohol'); }\n    else set.delete('Sin alcohol');\n    return;\n  }\n  if (stepKey === 'alcohol' && input.checked) set.delete('Sin alcohol');",
+      "new": "  if (stepKey === 'alcohol'){\n    input.checked = alcoholVM.setSelection(item.v, input.checked);\n    return;\n  }"
+    },
+    {
+      "old": "    el, app, STEPS, MAX_PICK, sel, partidaVM,",
+      "new": "    el, app, STEPS, MAX_PICK, sel, partidaVM, alcoholVM,"
+    }
+  ],
+  "game": [
+    {
+      "old": "import * as calculosVaso from '../vaso/calculosVaso.js';\n",
+      "new": "import * as calculosVaso from '../vaso/calculosVaso.js';\nimport {createAlcoholView} from '../etapas/alcohol/alcoholView.js';\n"
+    },
+    {
+      "old": "  function groups(stepIndex, className){\n    const wrap = api.el('div', {class:'play'});\n    api.STEPS[stepIndex].groups.forEach(function(g){\n      const fs = api.el('fieldset');\n      if (g.t) fs.append(api.el('legend', {}, g.t));\n      else fs.setAttribute('aria-label', question());\n      const box = api.el('div', {class: className === 'bubble' ? 'bubbles' : 'fruits'});\n      g.o.forEach(function(raw){\n        const item = api.asItem(raw);\n        const name = item.v === 'cualquiera' ? 'choice' : className;\n        box.append(token(stepIndex === 0 ? 'alcohol' : 'fruta', item, name));\n      });\n      fs.append(box);\n      wrap.append(fs);\n    });\n    return wrap;\n  }\n  function alcoholNode(){ return groups(0, 'bubble'); }\n",
+      "new": "  function alcoholNode(){\n    return createAlcoholView({\n      el:api.el, svgEl, groups:api.STEPS[0].groups, asItem:api.asItem,\n      viewModel:api.alcoholVM, isFresh:value => freshKey === 'a:' + value,\n      onToggle:toggleAlcohol, question\n    });\n  }\n"
+    },
+    {
+      "old": "  function flip(key, value){",
+      "new": "  function toggleAlcohol(value){\n    const result = api.alcoholVM.toggle(value);\n    if (result.status === 'limit'){\n      const why = document.getElementById('why');\n      if (why){\n        why.hidden = false;\n        why.textContent = 'Cinco es el tope.';\n      }\n      return;\n    }\n    if (result.added) freshKey = 'a:' + value;\n    api.moveFocus = false;\n    api.persist();\n    renderStage();\n    focusPick(value);\n  }\n  function flip(key, value){"
+    },
+    {
+      "old": "    } else if (className === 'bubble'){\n      b.append(svgEl('0 0 24 40','bottle-icon','<path d=\"M9 3h6v9l4 5v19H5V17l4-5z\" fill=\"currentColor\"/><path d=\"M8 2h8v4H8z\" fill=\"currentColor\"/><path d=\"M7 22h10v9H7z\" fill=\"#fefae0\"/>',''), api.el('span',{},item.t));\n    } else b.textContent = item.t;",
+      "new": "    } else b.textContent = item.t;"
+    },
+    {
+      "old": "    const mark = key === 'alcohol' ? 'a:' : 'f:';",
+      "new": "    const mark = 'f:';"
+    },
+    {
+      "old": "      freshKey = (key === 'alcohol' ? 'a:' : 'f:') + value;",
+      "new": "      freshKey = 'f:' + value;"
+    }
+  ]
+}

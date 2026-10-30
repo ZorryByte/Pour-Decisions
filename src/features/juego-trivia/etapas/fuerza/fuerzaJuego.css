@@ -1,0 +1,96 @@
+/* La barra conserva el bosque, la crema y el vaso original. */
+.quiz.stage.measure-stage{display:block;max-width:1180px}
+.measure-stage .camino{margin-bottom:24px}
+.measure-game{position:relative;isolation:isolate;background:var(--ground);color:var(--cream);border-radius:16px;padding:32px clamp(20px,4vw,58px);overflow:hidden;color-scheme:dark;min-height:620px}
+.measure-game [hidden]{display:none!important}
+.measure-game :focus-visible{outline:2px solid var(--cream)!important;outline-offset:5px}
+.measure-top{display:flex;justify-content:space-between;align-items:flex-start;gap:28px}
+.quiz.stage .measure-game h1{color:var(--cream);font-size:clamp(28px,3vw,36px);max-width:23ch;line-height:1.1}
+.quiz.stage .measure-game h1:focus{outline:none!important}
+.measure-lead{max-width:48ch;margin:18px auto 0;color:var(--cream);font-size:16px;line-height:1.6}
+.measure-clock{flex:none;display:flex;flex-direction:column;text-align:right;font-size:13px;color:var(--cream)}
+.measure-seconds{font-size:32px;font-weight:600;line-height:1.1;color:var(--amber);font-variant-numeric:tabular-nums}
+.measure-time-track{height:5px;margin-top:20px;background:#465236;border-radius:3px;overflow:hidden}
+.measure-time-fill{display:block;height:100%;background:var(--amber);transform:scaleX(var(--measure-time,1));transform-origin:left}
+.measure-speech{position:relative;width:min(440px,65%);max-width:100%;min-height:112px;margin:32px max(0px,calc((100% - 780px)/2)) 4px auto;display:flex;align-items:center;padding:22px 28px;background:var(--cream);border-radius:26px;text-align:left;color:var(--ground)}
+.measure-game .measure-speech::after{content:'';position:absolute;left:74%;bottom:-14px;top:auto;width:26px;height:20px;background:var(--cream);clip-path:polygon(0 0,100% 0,38% 100%)}
+.measure-line{font-family:var(--display);font-size:clamp(21px,2.1vw,25px);line-height:1.32;text-wrap:balance;color:var(--ground)}
+.measure-table{position:relative;display:grid;grid-template-columns:1fr 1fr 1.15fr;align-items:end;gap:clamp(12px,4vw,72px);max-width:780px;height:350px;margin:0 auto}
+.measure-utensil{display:flex;flex-direction:column;align-items:center;justify-content:end;position:relative;align-self:end;min-width:0;border:0;background:none;color:var(--cream);padding:0 6px;cursor:grab;touch-action:none;user-select:none;-webkit-user-select:none;border-radius:6px}
+.measure-utensil:active{cursor:grabbing}
+.measure-utensil:disabled{opacity:1;cursor:default}
+.measure-utensil svg{overflow:visible;flex:none;pointer-events:none}
+.measure-bottle>svg{width:115px;height:210px;transform-origin:50% 87%;will-change:transform}
+.measure-jigger>svg{width:128px;height:180px}
+.quiz.stage .measure-glass .glass-build{width:165px;height:230px;max-height:none;filter:none;transform-origin:50% 90%}
+.measure-object-name{font-size:15px;font-weight:600;line-height:1.3;margin-top:12px;max-width:22ch;text-align:center}
+.measure-object-help{display:block;font-size:12px;line-height:1.4;font-weight:400;margin-top:5px;color:#e4dfc5;text-align:center}
+.measure-utensil.is-held{z-index:7;cursor:grabbing}
+.measure-jigger,.measure-glass{transform-origin:50% 60%;will-change:transform}
+.measure-game.is-pouring .measure-jigger,.measure-game.is-filling .measure-bottle{z-index:7}
+.measure-utensil.is-held .measure-object-name,.measure-utensil.is-held .measure-object-help{visibility:hidden}
+.measure-glass.is-target .glass-build{filter:drop-shadow(0 4px 2px #0003)}
+.measure-waste{position:absolute;left:0;top:100%;display:flex;flex-direction:column;align-items:center;width:135px;padding:5px 8px;background:transparent;border:0;color:var(--cream);cursor:pointer;border-radius:8px}
+.measure-waste svg{width:90px;height:40px;overflow:visible}
+.measure-waste>span:not(.measure-object-help){font-size:13px}
+.measure-waste .measure-object-help{font-size:11px}
+.measure-waste.is-target{background:#465236}
+.measure-stream{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;z-index:8;opacity:0}
+.measure-stream.is-visible{opacity:1}
+.measure-countdown{position:relative;display:flex;align-items:center;justify-content:center;min-height:132px;width:100%;font-family:var(--display);font-size:clamp(78px,11vw,110px);line-height:1;color:var(--amber);pointer-events:none;contain:layout style;opacity:1}
+.measure-instruction{font-size:14px;max-width:42ch;min-height:42px;text-align:center;margin:34px auto 0;padding-left:100px;color:var(--cream)}
+.measure-scale{max-width:400px;margin:16px auto 0;display:flex;justify-content:space-between;gap:12px;padding-left:30px}
+.measure-scale>span{display:flex;flex-direction:column;gap:3px;color:#e4dfc5;text-align:center;flex:1;font-size:12px}
+.measure-scale strong{font-size:16px;font-weight:500}
+.measure-scale>span>span{display:none}
+.measure-scale .is-current{color:var(--amber)}
+.measure-scale .is-current strong{font-weight:700;text-decoration:underline;text-underline-offset:6px}
+.measure-result-amount{font-size:19px;text-align:center;margin:18px 0 0;color:var(--amber)}
+.measure-actions{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 24px;margin-top:28px}
+.quiz.stage .measure-game .btn{background:var(--amber);color:var(--ground);min-height:52px;border-radius:6px;min-width:180px;font-weight:600}
+.quiz.stage .measure-game .btn:hover{background:var(--cream);color:var(--ground)}
+.quiz.stage .measure-game .btn:disabled{background:#535f3f;color:var(--cream);cursor:default}
+.quiz.stage .measure-game .text{color:var(--cream);background:transparent;min-height:44px;padding:8px 2px;text-decoration-color:var(--cream)}
+.measure-game[data-phase="entrada"],.measure-game[data-phase="cuenta"],.measure-game[data-phase="resultado"]{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:620px;padding-block:38px}
+.measure-game[data-phase="entrada"] .measure-table,.measure-game[data-phase="cuenta"] .measure-table,.measure-game[data-phase="resultado"] .measure-table{order:-1;display:flex;justify-content:center;height:240px;margin:0 0 18px;width:100%}
+.measure-game[data-phase="entrada"] .measure-table>:not(.measure-glass),.measure-game[data-phase="cuenta"] .measure-table>:not(.measure-glass),.measure-game[data-phase="resultado"] .measure-table>:not(.measure-glass){display:none}
+.measure-game[data-phase="entrada"] .measure-glass>svg,.measure-game[data-phase="cuenta"] .measure-glass>svg,.measure-game[data-phase="resultado"] .measure-glass>svg{width:170px;height:230px}
+.measure-game[data-phase="entrada"] .measure-glass>output,.measure-game[data-phase="entrada"] .measure-glass>span,.measure-game[data-phase="cuenta"] .measure-glass>output,.measure-game[data-phase="cuenta"] .measure-glass>span,.measure-game[data-phase="resultado"] .measure-glass>output,.measure-game[data-phase="resultado"] .measure-glass>span{display:none}
+.measure-game[data-phase="entrada"] .measure-speech{order:-2;width:min(520px,100%);margin:0 auto 32px;min-height:132px}
+.measure-game[data-phase="entrada"] .measure-speech::after{left:calc(50% - 13px)}
+.measure-game[data-phase="entrada"] .measure-line{font-size:clamp(23px,2.8vw,30px)}
+.measure-game[data-phase="cuenta"] .measure-countdown{order:-2;margin-bottom:32px}
+.measure-game[data-phase="entrada"] .measure-actions,.measure-game[data-phase="cuenta"] .measure-actions{display:none}
+.measure-game[data-phase="jugando"] .measure-object-help{display:none}
+.measure-game[data-phase="jugando"] .measure-waste{top:calc(100% + 5px)}
+.measure-game[data-phase="jugando"] .measure-waste .measure-object-help{display:none}
+.measure-game[data-phase="entrada"] .measure-top,.measure-game[data-phase="resultado"] .measure-top{text-align:center;display:block}
+.measure-game[data-phase="entrada"] h1,.measure-game[data-phase="resultado"] h1{margin-inline:auto}
+.measure-game[data-phase="resultado"] .measure-speech{order:-2;width:min(520px,100%);min-height:100px;margin:0 auto 24px}
+.measure-game[data-phase="resultado"] .measure-speech::after{left:calc(50% - 13px)}
+.measure-game[data-phase="resultado"] .measure-line{font-size:22px;line-height:1.4}
+.measure-game[data-phase="resultado"] .measure-scale{width:min(100%,440px);padding:0}
+.measure-game.is-pouring .surface{ry:4.5}
+.measure-game[data-paused="true"] .measure-table{opacity:.65}
+.measure-game.is-urgent .measure-seconds{color:var(--cream)}
+body:has(.measure-game[data-phase="jugando"]) .profile-entry,body:has(.measure-game[data-phase="cuenta"]) .profile-entry{visibility:hidden;pointer-events:none}
+@media(max-width:650px){
+  .measure-game{padding:24px 18px 38px;min-height:580px;border-radius:12px}
+  .measure-top{gap:12px}.quiz.stage .measure-game h1{font-size:30px;max-width:18ch}
+  .measure-clock{font-size:11px;max-width:85px}.measure-seconds{font-size:27px}
+  .measure-table{gap:8px;height:280px;margin-top:6px}
+  .measure-bottle>svg{width:75px;height:160px}
+  .measure-jigger>svg{width:92px;height:140px}
+  .quiz.stage .measure-glass .glass-build{width:110px;height:180px}
+  .measure-object-name{font-size:12px}.measure-object-help{font-size:11px}
+  .measure-speech{width:100%;min-height:112px;margin:28px auto 6px;padding:20px 22px}.measure-line{font-size:21px}
+  .measure-waste{width:100px;left:-6px}.measure-waste svg{width:70px}
+  .measure-waste .measure-object-help{max-width:12ch}
+  .measure-instruction{padding-left:95px;min-height:52px;margin-top:28px;font-size:13px;text-align:left}
+  .measure-scale{padding-left:0;margin-top:18px;gap:4px}
+  .measure-scale strong{font-size:15px}.measure-scale>span{font-size:11px}
+  .measure-actions{gap:8px 20px;margin-top:24px}
+  .measure-game[data-phase="entrada"],.measure-game[data-phase="resultado"]{min-height:620px}
+  .measure-game[data-phase="entrada"] h1{max-width:19ch}
+}
+@media(prefers-reduced-motion:reduce){.measure-game *{animation:none!important;transition:none!important}}

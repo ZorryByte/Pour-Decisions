@@ -1,0 +1,46 @@
+{
+  "game": [
+    {
+      "old": "  function blocked(){\n    if (api.step === 0) return api.sel.alcohol.size === 0;\n    if (api.step === 1) return false;\n    if (api.step === 2) return STYLE_CARDS.some(function(c){ return typeof api.styleDecisions[c.name] !== 'boolean'; });\n    if (api.step === 3) return api.sel.fuerza.size === 0;\n    if (api.step === 4) return api.sel.alergia.size === 0;\n    return api.sel.plan.size === 0 || api.ranked().length === 0;\n  }\n",
+      "new": "  function blocked(){ return api.partidaVM.blocked(); }\n"
+    },
+    {
+      "old": "  function goBack(){\n    if (api.step === 0) return;\n    if (api.step === 5 && window.Preguntas && Preguntas.back()){\n      api.moveFocus = true;\n      api.persist();\n      renderStage();\n      return;\n    }\n    api.phase = 'step';\n    api.saveOpts = null;\n    api.step -= 1;\n    api.moveFocus = true;\n    api.persist();\n    renderStage();\n  }\n  function goNext(ev){\n    if (ev) ev.preventDefault();\n    // El formulario no adelanta los encuentros al pulsar Enter.\n    if (ev && api.step === 2) return;\n    if (blocked()){\n      const why = document.getElementById('why');\n      if (why){\n        why.hidden = false;\n        why.textContent = whyText();\n      }\n      const btn = api.app.querySelector('.btn.next');\n      if (btn) btn.focus();\n      return;\n    }\n    if (api.step >= api.STEPS.length - 1) return;\n    api.phase = 'step';\n    api.step += 1;\n    api.moveFocus = true;\n    api.persist();\n    renderStage();\n  }\n",
+      "new": "  function goBack(){\n    const result = api.partidaVM.back();\n    if (result === 'ignored') return;\n    if (result === 'step') api.saveOpts = null;\n    api.moveFocus = true;\n    api.persist();\n    renderStage();\n  }\n  function goNext(ev){\n    if (ev) ev.preventDefault();\n    const result = api.partidaVM.next(Boolean(ev));\n    if (result === 'blocked'){\n      const why = document.getElementById('why');\n      if (why){\n        why.hidden = false;\n        why.textContent = whyText();\n      }\n      const btn = api.app.querySelector('.btn.next');\n      if (btn) btn.focus();\n      return;\n    }\n    if (result !== 'advanced') return;\n    api.moveFocus = true;\n    api.persist();\n    renderStage();\n  }\n"
+    }
+  ],
+  "app": [
+    {
+      "old": "import {createEstadoPartida, clavesPartida as SEL_KEYS} from '../features/juego-trivia/partida/estadoPartida.js';\n",
+      "new": "import {createEstadoPartida, clavesPartida as SEL_KEYS} from '../features/juego-trivia/partida/estadoPartida.js';\nimport {createPartidaViewModel} from '../features/juego-trivia/partida/partidaViewModel.js';\n"
+    },
+    {
+      "old": "let saveOpts = null;\n",
+      "new": "let saveOpts = null;\nconst partidaVM = createPartidaViewModel({\n  state:partida, steps:STEPS, ranked,\n  backQuestion:() => Boolean(window.Preguntas && Preguntas.back())\n});\n"
+    },
+    {
+      "old": "    if (partida.step === 0) return;\n    partida.step -= 1;",
+      "new": "    if (!partidaVM.backSimple()) return;"
+    },
+    {
+      "old": "  function blocked(){ return s.req && sel[s.k].size === 0 && !(s.k === 'fruta' && partida.fruitAny); }",
+      "new": "  function blocked(){ return partidaVM.simpleBlocked(); }"
+    },
+    {
+      "old": "    if (blocked()){ why.hidden = false; next.focus(); return; }\n    moveFocus = true;\n    if (partida.step < STEPS.length - 1){ partida.step += 1; render(); return; }\n    if (!ranked().length){\n      why.hidden = false;\n      why.textContent = 'Con esas alergias no queda un trago en la carta. Vuelve y quita alguna.';\n      return;\n    }\n    partida.current = ranked()[0];\n    saved = false;\n    sendNote = '';\n    partida.phase = 'result';\n",
+      "new": "    const result = partidaVM.nextSimple();\n    if (result === 'blocked'){ why.hidden = false; next.focus(); return; }\n    moveFocus = true;\n    if (result === 'advanced'){ render(); return; }\n    if (result === 'empty'){\n      why.hidden = false;\n      why.textContent = 'Con esas alergias no queda un trago en la carta. Vuelve y quita alguna.';\n      return;\n    }\n    saved = false;\n    sendNote = '';\n"
+    },
+    {
+      "old": "function finishConversation(){\n  const list = ranked();\n  if (!list.length) return;\n  partida.current = list[0];\n  partida.phase = 'result';\n",
+      "new": "function finishConversation(){\n  if (!partidaVM.finishConversation()) return;\n"
+    },
+    {
+      "old": "onBack:() => { if (!Preguntas.back()) partida.step = 4; moveFocus = true; persist(); render(); },",
+      "new": "onBack:() => { partidaVM.backConversation(); moveFocus = true; persist(); render(); },"
+    },
+    {
+      "old": "    el, app, STEPS, MAX_PICK, sel,\n",
+      "new": "    el, app, STEPS, MAX_PICK, sel, partidaVM,\n"
+    }
+  ]
+}

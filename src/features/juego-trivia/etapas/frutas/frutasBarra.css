@@ -1,0 +1,98 @@
+.quiz.stage.step-1{display:flex;max-width:1180px}
+body:has(.fruit-bar){position:relative}
+body:has(.fruit-bar) .profile-entry{position:absolute}
+.fruit-bar{--mix-color:#dda15e;display:grid;grid-template-columns:minmax(280px,1fr) minmax(0,1.1fr);gap:clamp(28px,4vw,56px);width:100%;align-items:start;color:#fefae0;background:#283618;padding:clamp(22px,3vw,38px);border-radius:28px;box-sizing:border-box}
+.fruit-actors{position:sticky;top:28px;min-width:0;padding:8px 0 18px}
+.fruit-speech-deck{display:grid;grid-template-columns:1fr 1fr;column-gap:24px;min-height:158px;align-items:start;padding:0 0 28px;box-sizing:border-box}
+.fruit-theatre{position:relative;display:grid;grid-template-columns:1fr 1fr;align-items:end;gap:24px;height:270px}
+.fruit-character{height:270px;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;min-width:0;box-sizing:border-box}
+.fruit-character-bubble{position:relative;z-index:3;background:#fefae0;color:#283618;padding:16px 18px;border-radius:22px;width:100%;max-width:215px;box-sizing:border-box}
+.fruit-character-bubble::after{content:'';position:absolute;bottom:-14px;width:28px;height:20px;background:#fefae0;clip-path:polygon(0 0,100% 0,50% 100%)}
+.glass-bubble{grid-column:1;grid-row:1}.glass-bubble::after{left:44%}
+.shaker-bubble{grid-column:2;grid-row:1;justify-self:end}.shaker-bubble::after{right:44%}
+.fruit-speech-line{margin:0;font-family:var(--display);font-size:17px;font-weight:500;line-height:1.4;text-wrap:pretty;overflow-wrap:break-word}
+.fruit-glass{width:95%;max-width:170px;position:relative;transform-origin:50% 70%;will-change:transform}
+.fruit-glass .glass-build{width:100%;height:auto}
+.fruit-shaker{display:block;width:100%;max-width:185px;padding:0;border:0;background:none;box-shadow:none;transform-origin:50% 70%;touch-action:none;will-change:transform}
+.fruit-shaker:disabled{opacity:1;cursor:default}
+.fruit-shaker:enabled{cursor:grab}
+.fruit-shaker svg{display:block;width:100%;height:auto;overflow:visible;transform-origin:50% 80%}
+.fruit-ground-shadow{position:absolute;bottom:15px;left:17%;width:66%;height:10px;border-radius:50%;background:#101c0bcc;filter:blur(5px);opacity:.6;pointer-events:none;transition:opacity .3s,transform .3s}
+.glass-character .fruit-ground-shadow{bottom:30px;left:21%;width:58%;height:7px;opacity:.45;filter:blur(4px)}
+.fruit-character:has(.is-held)>.fruit-ground-shadow,.fruit-character:has(.is-airborne)>.fruit-ground-shadow{opacity:.2;transform:scale(.8, .65)}
+.fruit-shaker.is-held{filter:drop-shadow(5px 9px 8px #101c0b26)}
+.is-dizzy .fruit-shaker svg{animation:bar-dizzy 1.2s ease-in-out infinite}
+.fruit-base-note{font-size:12px;color:#d9ddbd;margin:16px 0 0;text-align:center;overflow-wrap:anywhere}
+.fruit-work{min-width:0}
+.quiz.stage .fruit-work h1{max-width:24ch;font-size:clamp(25px,2.15vw,31px);line-height:1.15;margin:0 0 12px;color:#fefae0}
+.fruit-hint,.fruit-prep-hint{color:#e0e2c8;line-height:1.55;font-size:14px;margin:0 0 15px;max-width:52ch}
+.fruit-shelf{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px 8px;margin:22px 0 16px;min-height:214px;align-content:center}
+.fruit-bar-pick{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:96px;padding:5px 2px;border:0;border-radius:0;background:none;color:#fefae0;font:inherit;font-size:12px;cursor:grab;touch-action:none;user-select:none}
+.quiz.stage .fruit-bar-pick .fruit-icon{width:68px;height:68px;margin:0;transition:transform .2s cubic-bezier(.16,1,.3,1),opacity .15s;filter:drop-shadow(0 5px 3px #0c180b28)}
+.fruit-bar-pick>*{pointer-events:none}
+.fruit-bar-pick:hover .fruit-icon{transform:translateY(-7px) rotate(-8deg) scale(1.06)}
+.fruit-bar-pick.is-held .fruit-icon{opacity:.2;transform:scale(.88)}
+.fruit-bar-pick.is-on .fruit-icon{opacity:.4}
+.fruit-bar-pick.is-on::after{content:'✓';position:absolute;right:12px;top:0;color:#dda15e;font-size:14px}
+.fruit-count{font-size:12px;margin:14px 0 0;color:#e0e2c8;min-height:18px}
+.fruit-error{font-size:14px;color:#ffd49d;margin:10px 0}.fruit-error:empty{display:none}
+.fruit-prep-area{position:relative;padding-right:36px;min-height:175px}
+.fruit-bowl{position:relative;height:155px;margin:12px 5px 12px;--crush:0;cursor:grab;touch-action:none;user-select:none;transform-origin:50% 70%;will-change:transform}
+.fruit-bowl::after{content:'';position:absolute;left:9%;right:9%;bottom:10px;height:110px;border:2px solid #d4d9b7;border-top:2px solid #a6b19b;border-radius:6px 6px 90px 90px;background:linear-gradient(90deg,#b4c0ad22,#fefae009);z-index:3;pointer-events:none}
+.fruit-bowl.is-empty::before{content:'Suelta tus frutas aquí';position:absolute;top:70px;left:0;right:0;text-align:center;font-size:13px;color:#e0e2c8;pointer-events:none}
+.fruit-pieces{position:absolute;bottom:20px;left:12%;right:12%;height:105px;z-index:4;pointer-events:none}
+.quiz.stage .fruit-pieces .fruit-icon{width:56px;height:56px;margin:0;transform:scaleY(calc(1 - var(--squash,0)));transform-origin:bottom;transition:transform .2s;pointer-events:none}
+.fruit-body{position:absolute;left:-28px;top:-28px;width:56px;height:56px;padding:0;background:none;border:0;cursor:grab;touch-action:none;pointer-events:auto}
+.fruit-pulp{position:absolute;bottom:15px;left:12%;right:12%;height:0;border-radius:50% 50% 70px 70px / 12px 12px 50px 50px;overflow:hidden;opacity:0;transition:height .35s,background-color .45s,opacity .2s}
+.fruit-pulp::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,#fefae026,transparent 50%,#28361819);border-top:1px solid #fefae04a;border-radius:inherit}
+.fruit-muddler{position:absolute;width:44px;height:150px;right:0;top:0;border:0;padding:0;background:none;border-radius:8px;transform:rotate(12deg);transform-origin:50% 95%;z-index:8;cursor:grab;touch-action:none;will-change:transform}
+.fruit-muddler svg{display:block;width:100%;height:100%;pointer-events:none}
+.fruit-muddler:disabled{opacity:.55}
+.fruit-bowl-grip{position:absolute;bottom:-7px;left:0;right:0;text-align:center;font-size:11px;color:#e0e2c8;pointer-events:none}
+.fruit-bar .is-held{z-index:70!important;cursor:grabbing}
+.fruit-bar .is-drop-target{outline:2px dashed #dda15e;outline-offset:7px;border-radius:20px}
+.fruit-drag-ghost{position:fixed;z-index:1000;pointer-events:none;transform:translate(-50%,-50%) rotate(-8deg);width:80px;height:80px;filter:drop-shadow(0 12px 9px #0004)}
+.fruit-drag-ghost .fruit-icon{width:100%;height:100%;margin:0}
+.fruit-bar.is-dragging{user-select:none}
+.fruit-fluid-overlay{position:fixed;inset:0;width:100vw;height:100vh;z-index:110;pointer-events:none;overflow:visible}
+.fruit-controls{display:flex;align-items:center;flex-wrap:wrap;gap:10px 20px;margin-top:15px}
+.quiz.stage .fruit-bar .btn{background:#dda15e;color:#283618;min-height:48px;min-width:140px}
+.quiz.stage .fruit-bar .text{min-height:44px;color:#fefae0;font-size:14px}
+.fruit-bar button:focus-visible{outline:3px solid #fefae0;outline-offset:4px}
+.fruit-bar button:disabled:not(.fruit-shaker){opacity:.55;cursor:default}
+.fruit-bar [hidden]{display:none!important}
+.fruit-bar.is-intro{grid-template-columns:minmax(0,600px);justify-content:center;min-height:520px}
+.fruit-bar.is-intro .fruit-actors{position:relative;top:auto;padding:0 10px}
+.fruit-bar.is-intro .fruit-theatre,.fruit-bar.is-intro .fruit-character{height:290px}
+.fruit-bar.is-intro .fruit-glass{max-width:175px}
+.fruit-bar.is-intro .fruit-shaker{max-width:220px}
+@keyframes bar-dizzy{0%,100%{transform:rotate(-4deg) translateY(1px)}50%{transform:rotate(5deg) translateY(-2px)}}
+@media(max-width:799px){
+ .fruit-bar{grid-template-columns:1fr;gap:22px;padding:22px 16px 25px;margin-bottom:85px}
+ .fruit-actors{position:relative;top:auto;padding:0}
+ .fruit-theatre,.fruit-character{height:185px}
+ .fruit-theatre,.fruit-speech-deck{column-gap:22px}
+ .fruit-speech-deck{min-height:165px;padding-bottom:28px}
+ .fruit-character-bubble{width:100%;padding:13px 14px;max-width:200px;border-radius:20px}
+ .fruit-speech-line{font-size:15.5px;line-height:1.4}
+ .fruit-glass{width:86%;max-width:100px}.fruit-shaker{width:85%;max-width:125px}
+ .fruit-base-note{margin-top:7px;font-size:11px}
+ .quiz.stage .fruit-work h1{font-size:25px;max-width:24ch}
+ .fruit-shelf{gap:13px 4px;min-height:196px;margin-top:18px}
+ .fruit-bar-pick{font-size:11px;min-height:88px}
+ .quiz.stage .fruit-bar-pick .fruit-icon{width:56px;height:56px}
+ .fruit-bar-pick.is-on::after{right:3px}
+ .fruit-bar.is-intro .fruit-actors{padding:0}
+ .fruit-bar.is-intro .fruit-character-bubble{width:100%}
+ .fruit-bar.is-intro .fruit-glass{max-width:120px}
+ .fruit-bar.is-intro .fruit-shaker{max-width:155px}
+ .fruit-bar.is-intro .fruit-theatre,.fruit-bar.is-intro .fruit-character{height:220px}
+ .glass-character .fruit-ground-shadow{bottom:17px}
+ .fruit-ground-shadow{bottom:10px;height:7px;filter:blur(4px)}
+}
+@media(max-width:370px){.fruit-shelf{grid-template-columns:repeat(4,minmax(0,1fr))}.fruit-speech-deck{column-gap:14px}}
+@media(prefers-reduced-motion:reduce){.fruit-bar *,.fruit-bar *::after{animation:none!important;transition:none!important}}
+@media(prefers-reduced-motion:no-preference){
+ .fruit-word{display:inline-block;animation:fruit-word 160ms ease-out both;animation-delay:var(--word-delay)}
+ @keyframes fruit-word{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+}

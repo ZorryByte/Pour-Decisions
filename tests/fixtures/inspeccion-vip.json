@@ -1,0 +1,50 @@
+{
+  "app": [
+    {
+      "old": "",
+      "new": "import {createRestriccionesViewModel} from '../features/juego-trivia/etapas/restricciones/restriccionesViewModel.js';\nimport {OPCIONES_RESTRICCIONES, etiquetaRestriccion, MOTIVOS} from '../features/juego-trivia/etapas/restricciones/restriccionesDatos.js';\n"
+    },
+    {
+      "old": "  {k:'alergia', q:'¿Hay algo que no puedas tomar?', h:'Si no hay, marca ninguna.', multi:true, req:true, groups:[\n    {t:'', o:[\n      {v:'ninguna', t:'Ninguna'},\n      {v:'lacteos', t:'Lácteos'},\n      {v:'frutos secos', t:'Frutos secos'},\n      {v:'citricos', t:'Cítricos'},\n      {v:'gluten', t:'Gluten'},\n      {v:'otra', t:'Otra'}\n    ]}\n  ]},\n",
+      "new": "  {k:'alergia', q:'¿Hay algo que no puedas tomar?', h:'Deja fuera lo que necesitas evitar.', multi:true, req:true, groups:[\n    {t:'', o:[...OPCIONES_RESTRICCIONES, {v:'lactosa',t:'Lactosa'}, {v:'trigo',t:'Trigo'}]}\n  ]},\n"
+    },
+    {
+      "old": "",
+      "new": "const restriccionesVM = createRestriccionesViewModel({state:partida});\n"
+    },
+    {
+      "old": "  state:partida, steps:STEPS, ranked,",
+      "new": "  state:partida, steps:STEPS, ranked, restriccionesVM,"
+    },
+    {
+      "old": "      preguntas:window.Preguntas ? Preguntas.snapshot() : null",
+      "new": "      preguntas:window.Preguntas ? Preguntas.snapshot() : null,\n      inspeccion:restriccionesVM.snapshot()"
+    },
+    {
+      "old": "",
+      "new": "    restriccionesVM.restore(d.inspeccion);\n"
+    },
+    {
+      "old": "        p_alergias:[...sel.alergia].map(v => ALERGIA_LABEL[v] || v),",
+      "new": "        p_alergias:[...sel.alergia].map(v => {\n          if (v === 'otra') return 'Otra: ' + restriccionesVM.snapshot().otra;\n          const id = v === 'lactosa' ? 'lacteos' : v === 'trigo' ? 'gluten' : v;\n          const motivo = MOTIVOS[restriccionesVM.snapshot().decisiones[id]];\n          return (v === 'lactosa' ? 'Lactosa' : v === 'trigo' ? 'Trigo' : etiquetaRestriccion(v)) + (motivo ? ' — ' + motivo : '');\n        }),"
+    },
+    {
+      "old": "",
+      "new": "  restriccionesVM.reset();\n"
+    },
+    {
+      "old": "    el, app, STEPS, MAX_PICK, sel, partidaVM, alcoholVM, frutasVM,",
+      "new": "    el, app, STEPS, MAX_PICK, sel, partidaVM, alcoholVM, frutasVM, restriccionesVM,"
+    }
+  ],
+  "game": [
+    {
+      "old": "",
+      "new": "import {createRestriccionesView} from '../etapas/restricciones/restriccionesView.js';\n"
+    },
+    {
+      "old": "",
+      "new": "    if (api.step === 4){\n      const inspection = createRestriccionesView({\n        el:api.el, viewModel:api.restriccionesVM, entrance:entered,\n        onChange:() => api.persist(), onNext:() => goNext(), onBack:goBack,\n      });\n      const quiz = api.el('div', {class:'quiz stage step-4'},nav,inspection);\n      api.app.replaceChildren(quiz);\n      lastPin = api.step;\n      api.persist();\n      api.placeFocus(quiz.querySelector('h1'));\n      if (entered) window.scrollTo(0,0);\n      return;\n    }\n"
+    }
+  ]
+}

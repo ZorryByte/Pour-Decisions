@@ -1,0 +1,47 @@
+# Dependencias y archivos generados
+node_modules/
+dist/
+coverage/
+.vite/
+
+# Variables locales y credenciales (conservar la plantilla)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+/.aws/
+
+# Herramientas de IA y sus archivos locales
+/.agents/
+/.codex/
+/.aider-desk/
+/.impeccable/
+/.taste-skill/
+/.claude/
+/.cursor/
+/.aider*
+/skills-lock.json
+
+# Capturas, pruebas visuales y versiones anteriores
+/artifacts/
+/playwright-report/
+/test-results/
+
+# Configuracion local de despliegue y editores
+.vercel/
+/.vscode/
+/.idea/
+
+# Logs y archivos temporales
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini

@@ -1,0 +1,104 @@
+/* La misma voz de bienvenida, ahora junto al vaso que habla. */
+.quiz.stage .glass-col{
+  gap:26px;
+  padding:30px clamp(22px, 3vw, 38px) 18px;
+  justify-content:flex-start;
+}
+.glass-speech{
+  position:relative;
+  flex:none;
+  width:100%;
+  min-height:132px;
+  display:flex;
+  align-items:center;
+  padding:22px 26px;
+  border-radius:26px;
+  background:var(--cream);
+  color:var(--ground);
+}
+.glass-speech::after{
+  content:'';
+  position:absolute;
+  bottom:-15px;
+  left:calc(50% - 14px);
+  width:26px;
+  height:20px;
+  background:var(--cream);
+  clip-path:polygon(0 0,100% 0,38% 100%);
+}
+.glass-speech-line{
+  margin:0;
+  width:100%;
+  font-family:var(--display);
+  font-weight:500;
+  font-size:clamp(20px, 1.8vw, 25px);
+  line-height:1.32;
+  text-wrap:pretty;
+  overflow-wrap:break-word;
+}
+.quiz.stage .glass-col > .glass-build{
+  width:clamp(205px, 20vw, 285px);
+  height:auto;
+  max-height:350px;
+  flex:none;
+  filter:none;
+  transform-origin:50% 84%;
+}
+.glass-build .surface{transform-box:fill-box;transform-origin:center}
+.quiz.stage .play-col > h1{margin-bottom:28px}
+@media(min-width:800px){
+  .quiz.stage .glass-col{min-height:510px}
+}
+@media(max-width:799px){
+  .quiz.stage .glass-col{
+    display:grid;
+    grid-template-columns:90px minmax(0,1fr);
+    align-items:center;
+    height:auto;
+    min-height:174px;
+    padding:20px 18px 20px 8px;
+    gap:14px;
+    overflow:visible;
+  }
+  .quiz.stage .glass-col > .glass-build{
+    grid-column:1;
+    grid-row:1;
+    width:90px;
+    height:136px;
+    max-height:none;
+  }
+  .glass-speech{
+    grid-column:2;
+    grid-row:1;
+    min-height:110px;
+    padding:17px 18px;
+    border-radius:20px;
+  }
+  .glass-speech::after{
+    left:-13px;
+    bottom:auto;
+    top:calc(50% - 10px);
+    width:16px;
+    height:22px;
+    clip-path:polygon(100% 0,100% 100%,0 60%);
+  }
+  .glass-speech-line{font-size:18px;line-height:1.35}
+  .quiz.stage .play-col > h1{margin-bottom:24px}
+}
+@media(max-width:370px){
+  .quiz.stage .glass-col{grid-template-columns:68px minmax(0,1fr);gap:10px}
+  .quiz.stage .glass-col > .glass-build{width:68px;height:115px}
+  .glass-speech{padding:16px}
+  .glass-speech-line{font-size:17px}
+}
+@media(prefers-reduced-motion:no-preference){
+  .glass-word{
+    display:inline-block;
+    animation:glass-word 160ms ease-out both;
+    animation-delay:var(--word-delay);
+  }
+  @keyframes glass-word{
+    from{opacity:0;transform:translateY(3px)}
+    to{opacity:1;transform:none}
+  }
+}
