@@ -2,6 +2,8 @@ import {createCuentaModel} from '../models/cuentaModel.js';
 import {createCuentaViewModel} from '../viewmodels/cuentaViewModel.js';
 import {motivosReaccion as REASONS} from '../domain/reacciones.js';
 import {normalizarPreferencias, clavesPreferencias as KEYS} from '../domain/preferencias.js';
+import {resumirElecciones} from '../domain/estadisticas.js';
+import {createEstadisticasViewModel} from '../viewmodels/estadisticasViewModel.js';
 
 /* Perfil privado: Supabase Auth + RLS. El nombre de la fiesta nunca autentica una cuenta. */
 window.Perfil = (function(){
@@ -12,6 +14,23 @@ window.Perfil = (function(){
   let api, model;
   let accessTimer;
   let active = false, wasWelcome = false, tab = 'guardados';
+  const expandedDetails = new Set();
+  function rememberDisclosure(node, key){
+    node.open = expandedDetails.has(key);
+    node.addEventListener('toggle', () => {
+      if (!node.isConnected) return;
+      if (node.open) expandedDetails.add(key); else expandedDetails.delete(key);
+    });
+    return node;
+  }
+  let latestResult = null, resultSignature = '', resultOwner;
+  const statistics = createEstadisticasViewModel({
+    accountId:() => cuenta.session?.user.id || null,
+    load:() => model.loadStatistics(), save:entry => model.saveSelection(entry),
+    readPending:user => { const rows = read('cocteles_estadisticas_pendientes_' + user, localStorage); return Array.isArray(rows) ? rows : []; },
+    writePending:(user, rows) => write('cocteles_estadisticas_pendientes_' + user, rows, localStorage),
+    notify:() => { if (active && tab === 'estadisticas') render(); }
+  });
   const cuentaVM = createCuentaViewModel({
     loadAccount:() => model.loadAccount(),
     requestCode:email => model.requestCode(email),
@@ -43,6 +62,12 @@ window.Perfil = (function(){
   });
   const cuenta = cuentaVM.state;
   cuentaVM.subscribe(event => {
+    statistics.sync();
+    if ((event === 'load-end' || event === 'action-end') && cuenta.session && latestResult && resultOwner === undefined){
+      resultOwner = cuenta.session.user.id; void statistics.record(latestResult);
+      write('cocteles_resultado_estadisticas_v1', null, sessionStorage);
+    }
+    if (event === 'load-end' && active && tab === 'estadisticas' && cuenta.session) void statistics.refresh();
     if (event === 'load-start' || event === 'action-start'){ if (active) render(); }
     else if (event === 'load-end' || event === 'action-end'){ updateEntry(); if (active) render(); }
     else if (event === 'access-reset' || event === 'logout-end' || event === 'pending-discarded') render();
@@ -91,14 +116,26 @@ window.Perfil = (function(){
   }
   function status(text, error = false){ return api.el('p', {class:'profile-status' + (error ? ' profile-error' : ''), role:error ? 'alert' : 'status'}, text); }
   function title(text, tag = 'h2'){ return api.el(tag, {tabindex:'-1'}, text); }
-  function open(name){
+  function open(name = 'guardados'){
     if (!active) wasWelcome = api.isWelcome();
     if (name) tab = name;
     active = true; cuenta.error = ''; cuenta.notice = ''; api.enter();
-    if (location.hash !== '#perfil') location.hash = 'perfil';
+    const hash = tab === 'estadisticas' ? '#perfil/estadisticas' : '#perfil';
+    if (location.hash !== hash) location.hash = hash;
     render();
     api.app.querySelector('h1')?.focus({preventScroll:true}); window.scrollTo(0,0);
     if (cuenta.session && !cuenta.loaded && !cuenta.loading) void load();
+    if (tab === 'estadisticas' && cuenta.session) void statistics.refresh();
+  }
+  function recordResult(coctel){
+    const choices = snapshot();
+    const signature = JSON.stringify([coctel, choices]);
+    if (signature === resultSignature) return;
+    resultSignature = signature;
+    latestResult = {id:crypto.randomUUID(), coctel, elecciones:choices, creado_at:new Date().toISOString()};
+    resultOwner = cuenta.session?.user.id;
+    if (resultOwner) void statistics.record(latestResult);
+    else write('cocteles_resultado_estadisticas_v1', latestResult, sessionStorage);
   }
   function close(){
     if (cuenta.busy) return;
@@ -112,24 +149,44 @@ window.Perfil = (function(){
   }
   function toggleFavorite(entry){ return cuentaVM.toggleFavorite(entry.coctel); }
   function react(c, fields){ return cuentaVM.react(c.n, fields); }
+  function reactionIcon(kind){
+    const paths = {
+      like:'M7 10v10H3V10h4Zm0 0 5-7c2 0 2 2 1 6h5a2 2 0 0 1 2 2l-2 8a2 2 0 0 1-2 1H7',
+      dislike:'M7 14V4H3v10h4Zm0 0 5 7c2 0 2-2 1-6h5a2 2 0 0 0 2-2l-2-8a2 2 0 0 0-2-1H7',
+      tasted:'m5 12 4 4L19 6',
+      favorite:'m12 3 2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9L12 3Z',
+      remove:'M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v7m4-7v7'
+    };
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('aria-hidden','true');
+    svg.setAttribute('class','profile-action-icon');
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d',paths[kind]); svg.append(path); return svg;
+  }
   function feedback(c, allowSave = true){
     const wrap = api.el('section', {class:'profile-feedback', 'aria-label':'Tu opinión sobre ' + c.n});
     let waiting = false, message = '';
     function paint(focusLabel){
       wrap.replaceChildren();
-      wrap.append(api.el('p', {class:'profile-feedback-question'}, '¿Te apetece este cóctel?'));
+      wrap.append(api.el('p', {class:'profile-feedback-question'}, allowSave ? '¿Te apetece este cóctel?' : 'Tu veredicto'));
       const r = reactionFor(c.n);
-      const row = api.el('div', {class:'profile-reactions'});
-      [['like','Me apetece'],['dislike','No me convence']].forEach(([value, label]) => {
+      const row = api.el('div', {class:'profile-reactions' + (allowSave ? '' : ' is-compact'), role:'group', 'aria-label':'Tu opinión sobre ' + c.n});
+      const options = allowSave ? [['like','Me apetece'],['dislike','No me convence']] : [['like','Me apetece'],['dislike','Paso'],['tasted','Me gustó']];
+      options.forEach(([value, label]) => {
         const b = button(label, async () => {
           if (waiting) return;
           waiting = true; paint(label);
-          const ok = await react(c, {reaccion:r?.reaccion === value ? null : value});
+          const ok = await react(c, value === 'tasted' ? {probado_gusto:!r?.probado_gusto} : {reaccion:r?.reaccion === value ? null : value});
           waiting = false;
           message = ok ? (cuenta.session ? 'Preferencia actualizada.' : 'Reacción anotada para esta visita. Al entrar podrás conservarla.') : cuenta.error;
           paint(label);
         });
-        b.setAttribute('aria-pressed', String(r?.reaccion === value)); b.disabled = waiting || cuenta.busy;
+        b.setAttribute('aria-pressed', String(value === 'tasted' ? !!r?.probado_gusto : r?.reaccion === value)); b.disabled = waiting || cuenta.busy;
+        if (!allowSave){
+          b.prepend(reactionIcon(value));
+          b.setAttribute('aria-label',value === 'tasted' ? 'Lo probé y me gustó' : value === 'dislike' ? 'No me convence' : label);
+          b.title = value === 'tasted' ? 'Lo probé y me gustó' : value === 'dislike' ? 'No me convence' : label;
+        }
         row.append(b);
       });
       wrap.append(row);
@@ -247,22 +304,29 @@ window.Perfil = (function(){
       const chosen = cuenta.data.avatar?.coctel === c.n;
       const art = api.el('div', {class:'profile-recipe-art'}); art.append(api.glass(c,true,identity.id));
       if (chosen) article.classList.add('is-favorite');
-      const content = api.el('div', {class:'profile-recipe-copy'}, api.el('h3', {}, c.n), api.el('p', {}, c.d));
+      const heading = api.el('div', {class:'profile-recipe-heading'}, api.el('h3', {}, c.n));
+      const content = api.el('div', {class:'profile-recipe-copy'}, heading, api.el('p', {}, c.d));
       if (!discovery) content.append(api.el('p', {class:'profile-recipe-personality'}, identity.nombre + ' · ' + identity.elementoNombre));
       if (discovery) content.append(api.el('p', {class:'profile-hint'}, entry.reason));
-      const details = api.el('details', {class:'profile-recipe-details'});
+      const details = rememberDisclosure(api.el('details', {class:'profile-recipe-details'}), 'recipe:' + c.n);
       details.append(api.el('summary', {}, 'Ver ingredientes y preparación'));
       const ingredients = api.el('ul'); c.i.forEach(item => ingredients.append(api.el('li', {}, item)));
       const steps = api.el('ol'); c.p.forEach(item => steps.append(api.el('li', {}, item)));
-      details.append(ingredients, steps); content.append(details, feedback(c, discovery));
+      const recipeBody = api.el('div', {class:'profile-recipe-method'},
+        api.el('section', {'aria-label':'Ingredientes'}, api.el('h4', {}, 'Ingredientes'), ingredients),
+        api.el('section', {'aria-label':'Preparación'}, api.el('h4', {}, 'Preparación'), steps));
+      details.append(recipeBody); content.append(details, feedback(c, discovery));
       if (!discovery){
-        const favorite = button(chosen ? 'Mi favorito · Quitar' : 'Usar como mi favorito', () => toggleFavorite(entry));
+        const favorite = button(chosen ? 'Favorito' : 'Elegir favorito', () => toggleFavorite(entry));
+        favorite.prepend(reactionIcon('favorite'));
+        favorite.setAttribute('aria-label',chosen ? 'Quitar como mi favorito' : 'Usar como mi favorito');
+        favorite.title = chosen ? 'Quitar como mi favorito' : 'Usar como mi favorito';
         favorite.setAttribute('aria-pressed',String(chosen));
-        content.append(api.el('div',{class:'profile-favorite-action'},favorite));
-        const r = reactionFor(c.n);
-        const tasted = button(r?.probado_gusto ? 'Lo probé y me gustó · anotado' : 'Lo probé y me gustó', () => react(c, {probado_gusto:!r?.probado_gusto}));
-        tasted.setAttribute('aria-pressed', String(!!r?.probado_gusto));
-        content.append(api.el('div', {class:'profile-recipe-actions'}, tasted, button('Quitar de mi colección', () => cuentaVM.removeSavedRecipe(c.n))));
+        heading.append(api.el('div',{class:'profile-favorite-action'},favorite));
+        const remove = button('Quitar', () => cuentaVM.removeSavedRecipe(c.n));
+        remove.prepend(reactionIcon('remove'));
+        remove.setAttribute('aria-label','Quitar de mi colección'); remove.title = 'Quitar de mi colección';
+        content.append(api.el('div', {class:'profile-recipe-actions'}, remove));
       }
       article.append(art, content); list.append(article);
     });
@@ -307,7 +371,8 @@ window.Perfil = (function(){
     root.append(form);
     const reactions = cuentaVM.reactionHistory();
     if (reactions.length){
-      const section = api.el('section', {class:'profile-reaction-history'}, title('Lo que has ido descubriendo'));
+      const section = rememberDisclosure(api.el('details', {class:'profile-reaction-history'},
+        api.el('summary', {}, 'Lo que has ido descubriendo (' + reactions.length + ')')), 'reactions');
       reactions.forEach(r => {
         const labels = [r.reaccion === 'like' ? 'Te apetece' : r.reaccion === 'dislike' ? 'No te convence' : '', r.probado_gusto ? 'Lo probaste y te gustó' : ''].filter(Boolean);
         const row = api.el('div', {class:'profile-history-row'}, api.el('span', {}, r.coctel + ' · ' + labels.join(' · ')));
@@ -337,7 +402,7 @@ window.Perfil = (function(){
       const photo = api.el('div', {class:'profile-avatar is-empty','aria-label':'Aún no elegiste un cóctel favorito'});
       photo.append(api.heroGlass()); header.append(photo);
     }
-    const copy = api.el('div', {class:'profile-identity-copy'}, title('Mi perfil','h1'));
+    const copy = api.el('div', {class:'profile-identity-copy'});
     if (identity) copy.append(api.el('h2', {},identity.nombre), api.el('p', {class:'profile-signature'}, 'Tu favorito: ' + cuenta.data.avatar.coctel), api.el('p', {class:'profile-hint'},identity.linea));
     else copy.append(api.el('p', {class:'profile-signature'}, 'Tu favorito le dará cara a tu perfil.'), api.el('p', {class:'profile-hint'}, 'Guarda tus recetas y elige una como favorita. Su personaje será tu avatar.'));
     copy.append(api.el('p', {class:'profile-email'},cuenta.session.user.email || 'Tu cuenta personal'));
@@ -362,7 +427,10 @@ window.Perfil = (function(){
       const option = api.app.querySelector('.profile-favorite-action button');
       option?.focus({preventScroll:true}); option?.scrollIntoView({block:'center',behavior:'instant'});
     }));
-    controls.append(button('Cerrar sesión',logout));
+    const logoutButton = button('Cerrar sesión',logout);
+    logoutButton.classList.add('profile-session-exit');
+    controls.append(logoutButton);
+    controls.prepend(button('Ver mis estadísticas', () => open('estadisticas')));
     if (window.Insignias && api.badgeContext) controls.prepend(button('Elegir insignias',()=>{
       tab='insignias'; render(); api.app.querySelector('.profile-content')?.focus({preventScroll:true});
     }));
@@ -408,13 +476,16 @@ window.Perfil = (function(){
   function render(){
     clearInterval(accessTimer);
     if (!active) return;
-    document.title = 'Mi perfil · ¿Qué tomamos?';
+    document.title = (tab === 'estadisticas' ? 'Mis estadísticas' : 'Mi perfil') + ' · ¿Qué tomamos?';
     document.body.classList.remove('flow'); document.body.classList.add('at-profile');
     const root = api.el('div', {class:'profile-page'});
     const nav = api.el('div', {class:'profile-top'}, api.el('span', {class:'profile-product'}, '¿Qué tomamos?'), button(wasWelcome ? 'Volver al inicio' : 'Volver a mi cóctel', close));
     root.append(nav);
     if (!cuenta.session) authView(root);
-    else {
+    else if (tab === 'estadisticas') {
+      statisticsView(root);
+    } else {
+      root.append(title('Mi perfil', 'h1'));
       profileHeader(root);
       const nav = api.el('nav', {class:'profile-tabs', 'aria-label':'Apartados del perfil'});
       [['guardados','Mis cócteles'],['gustos','Mis gustos'],['descubrir','Por descubrir'],['insignias','Insignias']].forEach(([value,label]) => {
@@ -432,6 +503,7 @@ window.Perfil = (function(){
         if (cuenta.pending) content.append(api.el('div', {class:'profile-pending'}, api.el('p', {}, 'Pendiente de guardar: ' + cuenta.pending.coctel + (cuenta.pending.favorite ? ' como tu favorito y avatar.' : '')), button('Guardar esta receta', () => cuentaVM.retryPending()),
           button('Descartar este guardado', () => cuentaVM.discardPending())));
         if (tab === 'guardados'){
+          content.append(title('Mis cócteles'));
           content.append(api.el('p', {class:'profile-lead'}, cuenta.data.favorites.length ? cuenta.data.favorites.length + (cuenta.data.favorites.length === 1 ? ' receta para volver a preparar.' : ' recetas para volver a preparar.') : 'Tu próxima mezcla favorita empieza aquí.'));
           if (cuenta.data.favorites.length) recipes(content, cuenta.data.favorites);
           else content.append(api.el('div', {class:'profile-empty'}, api.heroGlass(), api.el('p', {}, 'Cuando una receta te llame la atención, elige Guardar en mi perfil. Darle Me apetece no la guarda automáticamente.'), button('Descubrir recetas', () => { tab = 'descubrir'; render(); }, false)));
@@ -457,6 +529,50 @@ window.Perfil = (function(){
       else if(item.left<bounds.left) tabs.scrollLeft-=bounds.left-item.left;
     }
   }
+  function statisticsView(root){
+    root.append(button('Volver a mi perfil', () => open('guardados')), title('Mis estadísticas', 'h1'),
+      api.el('p', {class:'profile-lead'}, 'Tus elecciones al descubrir cócteles, reunidas en un solo lugar. Solo tú puedes verlas.'));
+    const state = statistics.state;
+    if (state.loading){ root.append(status('Cargando tus elecciones…')); return; }
+    if (state.error) root.append(status(state.error, true));
+    const retry = button(state.saving ? 'Guardando elecciones…' : 'Actualizar estadísticas', () => void statistics.refresh());
+    retry.disabled = state.saving; root.append(retry);
+    if (!state.loaded) return;
+    if (!state.entries.length){
+      root.append(api.el('div', {class:'profile-empty'}, title('Tu historia empieza con una mezcla.'),
+        api.el('p', {}, 'Todavía no hay elecciones registradas. Descubre un cóctel con tu sesión iniciada para empezar.'), button('Volver al juego', close)));
+      return;
+    }
+    const summary = api.el('dl', {class:'profile-stats-summary'});
+    [['Resultados registrados', state.entries.length], ['Cócteles diferentes', new Set(state.entries.map(row => row.coctel)).size]].forEach(([label, value]) => {
+      summary.append(api.el('div', {}, api.el('dt', {}, label), api.el('dd', {}, String(value))));
+    });
+    root.append(summary, api.el('p', {class:'profile-hint'}, 'Cada resultado se registra una vez. Los porcentajes indican en cuántos resultados elegiste cada opción; si marcaste varias, pueden sumar más de 100 %.'));
+    const groups = resumirElecciones(state.entries, KEYS);
+    const grid = api.el('div', {class:'profile-stats-groups'});
+    const names = {alcohol:'Alcohol', fruta:'Frutas', sabor:'Sabores', fuerza:'Intensidad', alergia:'Restricciones', plan:'Planes'};
+    api.steps.forEach(step => {
+      const section = api.el('section', {class:'profile-stats-group'}, title(names[step.k]));
+      const labels = new Map(step.groups.flatMap(group => group.o).map(option => typeof option === 'string' ? [option, option] : [option.v, option.t]));
+      const list = api.el('ul', {class:'profile-stats-list'});
+      groups[step.k].forEach(({value, count, percentage}) => {
+        const row = api.el('li', {}, api.el('span', {}, labels.get(value) || value), api.el('span', {class:'profile-stats-count'}, count + ' · ' + percentage + ' %'));
+        const track = api.el('span', {class:'profile-stats-track', 'aria-hidden':'true'});
+        const bar = api.el('span'); bar.style.width = percentage + '%'; track.append(bar); row.append(track); list.append(row);
+      });
+      section.append(groups[step.k].length ? list : api.el('p', {class:'profile-hint'}, 'Sin selecciones registradas.')); grid.append(section);
+    });
+    root.append(grid);
+    const history = api.el('section', {class:'profile-stats-history'}, title('Últimos resultados'));
+    const list = api.el('ol');
+    state.entries.slice(0, 20).forEach(entry => {
+      const date = new Date(entry.creado_at);
+      const row = api.el('li', {}, api.el('strong', {}, entry.coctel));
+      if (Number.isFinite(date.getTime())) row.append(api.el('time', {datetime:date.toISOString()}, date.toLocaleString('es-GT', {dateStyle:'medium', timeStyle:'short'})));
+      row.append(api.el('p', {class:'profile-hint'}, KEYS.flatMap(key => entry.elecciones?.[key] || []).join(' · ') || 'Sin preferencias marcadas.')); list.append(row);
+    });
+    history.append(list); root.append(history);
+  }
   function logout(){ return cuentaVM.logout(); }
   function init(context){
     api = context;
@@ -470,10 +586,17 @@ window.Perfil = (function(){
     cuentaVM.restoreAccess();
     cuentaVM.restorePending();
     cuentaVM.restoreGuest();
+    const draft = read('cocteles_resultado_estadisticas_v1', sessionStorage);
+    if (draft && drink(draft.coctel) && /^[0-9a-f-]{36}$/i.test(draft.id) && Number.isFinite(Date.parse(draft.creado_at))){
+      latestResult = {...draft, elecciones:preferences(draft.elecciones)};
+      resultSignature = JSON.stringify([draft.coctel, latestResult.elecciones]);
+    }
     document.getElementById('open-profile').addEventListener('click', () => open()); updateEntry();
     window.addEventListener('hashchange', () => {
-      if (location.hash === '#perfil' && !active) open();
-      else if (location.hash !== '#perfil' && active){ active = false; api.resume(wasWelcome); }
+      if (['#perfil', '#perfil/estadisticas'].includes(location.hash)){
+        const next = location.hash === '#perfil/estadisticas' ? 'estadisticas' : 'guardados';
+        if (!active || (next === 'estadisticas') !== (tab === 'estadisticas')) open(next);
+      } else if (active){ active = false; api.resume(wasWelcome); }
     });
     window.addEventListener('storage', event => {
       if (event.key !== SESSION) return;
@@ -481,5 +604,7 @@ window.Perfil = (function(){
     });
     if (cuenta.session) void load();
   }
-  return {init, open, render, feedback, boost, isOpen:() => active, accountId:() => cuenta.session?.user.id || null};
+  return {init, open, render, feedback, boost, recordResult,
+    resetStatisticsRound:() => { resultSignature = ''; latestResult = null; resultOwner = undefined; write('cocteles_resultado_estadisticas_v1', null, sessionStorage); },
+    isOpen:() => active, accountId:() => cuenta.session?.user.id || null};
 })();

@@ -1,3 +1,4 @@
+import {garnishMarkup} from '../features/juego-trivia/views/guarnicion.js';
 import {etapasPartida as STEPS} from '../features/juego-trivia/partida/etapasPartida.js';
 import {supabaseHeaders} from '../shared/infrastructure/supabaseHeaders.js';
 import {serializarPartida, recuperarPartida} from '../features/juego-trivia/partida/persistenciaPartida.js';
@@ -42,7 +43,6 @@ const sel = partida.sel;
 let cardView = null;
 let saved = false;
 let saving = false;
-let resetAsk = false;
 let deleteAsk = false;
 let sendNote = '';
 let deleteNote = '';
@@ -260,7 +260,6 @@ function chooseDrink(c){
   partida.phase = 'result';
   saved = false;
   sendNote = '';
-  resetAsk = false;
   moveFocus = true;
   render();
 }
@@ -529,24 +528,6 @@ const CHARACTER_GLASS_MARKUP = {
   wine:'<ellipse class="olive" cx="80" cy="179" rx="26" ry="5"/><path class="crystal" d="M77 113h6v62h-6z"/><path class="crystal" d="M49 26q-10 70 31 87 41-17 31-87z"/><path class="amber" d="M54 53q26 5 52 0 0 42-26 53-26-11-26-53z"/><ellipse cx="80" cy="26" rx="31" ry="4" fill="#fffdf0" stroke="#606c38" stroke-width="1.3"/>'
 };
 
-function garnishMarkup(fruit, kind){
-  const at = {
-    coupe:'translate(98 60)',
-    highball:'translate(98 6)',
-    rocks:'translate(104 44)',
-    mug:'translate(72 18)',
-    flute:'translate(86 2)',
-    hurricane:'translate(98 8)',
-    wine:'translate(96 12)'
-  }[kind] || 'translate(98 16)';
-  if (!fruit) return '';
-  if (fruit === 'Menta') return '<g transform="' + at + '"><ellipse class="olive" cx="8" cy="16" rx="7" ry="13" transform="rotate(-30 8 16)"/><ellipse class="olive" cx="20" cy="14" rx="7" ry="13" transform="rotate(26 20 14)"/></g>';
-  if (fruit === 'Coco') return '<g transform="' + at + '"><circle class="cream" cx="14" cy="14" r="13"/><circle class="olive" cx="14" cy="14" r="5"/></g>';
-  if (fruit === 'Limón' || fruit === 'Naranja') return '<g transform="' + at + '"><path class="amber" d="M2 26C12 4 30 2 32 18 18 20 8 22 2 26z"/></g>';
-  if (fruit === 'Piña') return '<g transform="' + at + '"><ellipse class="amber" cx="14" cy="20" rx="11" ry="14"/><path class="olive" d="M14 4l5 12H9zM6 8l9 8-7 2zM22 8l-9 8 7 2z"/></g>';
-  return '<g transform="' + at + '"><circle class="amber" cx="12" cy="12" r="11"/></g>';
-}
-
 function drinkExpression(c, personality){
   const expressions = {
     escandaloso:'happy', bocon:'cheeky', apuntado:'surprised',
@@ -804,6 +785,7 @@ function renderDrinkCard(c){
 }
 
 function renderResult(opts = {}){
+  if (window.Perfil) Perfil.recordResult(partida.current.n);
   if (window.Juego) Juego.cancelReveal();
   const arq = window.Juego ? Juego.archetype() : null;
   document.title = (arq ? arq.nombre + ' · ' : '') + partida.current.n + ' · ¿Qué tomamos?';
@@ -811,11 +793,11 @@ function renderResult(opts = {}){
   app.replaceChildren();
   const c = partida.current;
   const plan = planActual();
-  const title = el('h1', {id:'result-heading'}, arq ? arq.nombre : ('Eres un ' + c.n));
+  const title = el('h1', {id:'result-heading'}, c.n);
   const lede = el('div', {class:'lede'});
   if (arq){
+    lede.append(el('p', {class:'is-drinkline'}, 'Eres ' + arq.nombre));
     lede.append(el('p', {class:'result-element'}, 'Tu elemento: ' + arq.elementoNombre));
-    lede.append(el('p', {class:'is-drinkline'}, 'Tu cóctel: ' + c.n));
     lede.append(el('p', {}, arq.linea));
     lede.append(el('p', {class:'after'}, c.d));
   } else {
@@ -825,7 +807,11 @@ function renderResult(opts = {}){
   const follow = el('div', {class:'follow'});
   const recipe = el('section', {class:'result-recipe', 'aria-labelledby':'recipe-heading'}, el('h2', {id:'recipe-heading'}, 'Tu receta, sin misterio.'));
   const closing = window.Preguntas ? Preguntas.closing() : '';
-  if (closing) lede.append(el('p', {class:'question-closing'}, closing));
+  if (closing){
+    const story = el('details', {class:'result-story'});
+    story.append(el('summary', {}, 'Lo que contaron tus respuestas'), el('p', {class:'question-closing'}, closing));
+    lede.append(story);
+  }
   const recipeColumns = el('div', {class:'recipe-columns'});
   drinkRecipeBlocks(c).forEach(block => {
     const heading = block.querySelector('h2');
@@ -871,32 +857,25 @@ function renderResult(opts = {}){
   }
   follow.append(more);
 
-  const restart = el('div', {class:'block result-restart'});
-  if (resetAsk){
-    restart.append(el('p', {}, 'Esto borra lo que marcaste.'));
-    const yes = el('button', {class:'text restart-confirm', type:'button'}, 'Sí, empezar de cero');
-    const no = el('button', {class:'text', type:'button'}, 'Mejor no');
-    yes.addEventListener('click', resetWizard);
-    no.addEventListener('click', () => { resetAsk = false; moveFocus = true; render(); });
-    restart.append(el('div', {class:'actions'}, yes, no));
-  } else {
-    const backQ = el('button', {class:'text', type:'button'}, 'Cambiar lo que marqué');
-    const again = el('button', {class:'text', type:'button'}, 'Empezar de cero');
-    backQ.addEventListener('click', () => {
-      partida.phase = 'step';
-      partida.stage = 'plan';
-      saved = false;
-      sendNote = '';
-      moveFocus = true;
-      render();
-    });
-    again.addEventListener('click', () => { resetAsk = true; moveFocus = true; render(); });
-    restart.append(el('div', {class:'actions'}, backQ, again));
-  }
+  const restart = el('div', {class:'result-restart'});
+  const backQ = el('button', {class:'btn quiet', type:'button'}, 'Cambiar lo que marqué');
+  backQ.addEventListener('click', () => {
+    partida.phase = 'step';
+    partida.stage = 'plan';
+    saved = false;
+    sendNote = '';
+    moveFocus = true;
+    render();
+  });
+  const again = el('button', {class:'text result-reset', type:'button'}, 'Empezar de cero');
+  again.addEventListener('click', resetWizard);
+  restart.append(backQ, again);
   follow.append(restart);
   const del = deleteControl();
   if (del) follow.append(del);
   if (window.Juego) Juego.mountResult(follow);
+  const adjust = follow.querySelector('.result-humor');
+  if (adjust) adjust.append(restart);
 
   const play = reveal;
   reveal = false;
@@ -908,6 +887,14 @@ function renderResult(opts = {}){
   const portrait = el('div', {class:'portrait result-character'});
   portrait.append(drinkPortrait(c, play && window.Juego));
   const intro = el('div', {class:'result-intro'}, title, lede);
+  const readRecipe = el('button', {class:'btn result-recipe-link', type:'button', 'aria-controls':'recipe-heading'}, 'Ver mi receta');
+  readRecipe.addEventListener('click', () => {
+    const heading = recipe.querySelector('h2');
+    heading.setAttribute('tabindex','-1');
+    heading.focus({preventScroll:true});
+    recipe.scrollIntoView({block:'start', behavior:'instant'});
+  });
+  intro.append(readRecipe);
   const badgeNames = Array.from(follow.querySelectorAll('.badge-name'));
   if (badgeNames.length){
     const newBadges = Array.from(follow.querySelectorAll('.badge.is-new .badge-name'));
@@ -926,9 +913,14 @@ function renderResult(opts = {}){
     });
     preview.append(see);intro.append(preview);
   }
-  if (window.Perfil) intro.append(Perfil.feedback(c));
+  const personal = el('section', {class:'result-personal', 'aria-labelledby':'personal-heading'}, el('h2', {id:'personal-heading'}, 'Tu cóctel, a tu manera'));
+  if (window.Perfil) personal.append(Perfil.feedback(c));
   const share = follow.querySelector('.result-share');
-  if (share) intro.append(share);
+  if (share){
+    share.setAttribute('aria-label','Compartir tu cóctel');
+    personal.append(share);
+  }
+  recipe.after(personal);
   const hero = el('section', {class:'result-hero', 'aria-labelledby':'result-heading'}, intro, portrait);
   const quiz = el('div', {class:'quiz result result-showcase'});
   if (arq) quiz.dataset.element = arq.elemento;
@@ -1157,6 +1149,7 @@ async function onDelete(){
 }
 
 function resetWizard(){
+  if (window.Perfil) Perfil.resetStatisticsRound();
   partida.phase = 'step';
   partida.stage = 'alcohol';
   partida.fruitAny = false;
@@ -1164,7 +1157,6 @@ function resetWizard(){
   cardView = null;
   saved = false;
   saving = false;
-  resetAsk = false;
   deleteAsk = false;
   deleteNote = '';
   sendNote = '';
@@ -1208,7 +1200,7 @@ function render(){
 
 const navigation = performance.getEntriesByType('navigation')[0];
 const reloaded = navigation ? navigation.type === 'reload' : performance.navigation?.type === 1;
-const requestedProfile = !reloaded && location.hash === '#perfil';
+const requestedProfile = !reloaded && ['#perfil', '#perfil/estadisticas'].includes(location.hash);
 if (reloaded){
   // F5 empieza una partida nueva; la cuenta y sus datos guardados se conservan.
   try { sessionStorage.removeItem(WKEY); } catch (e) { /* se ignora la partida anterior */ }
@@ -1262,7 +1254,7 @@ if (window.Juego){
     set saveOpts(v){ saveOpts = v; },
     get moveFocus(){ return moveFocus; },
     set moveFocus(v){ moveFocus = v; },
-    togglePick, asItem, ranked, persist, render, placeFocus, finishConversation,
+    togglePick, asItem, ranked, persist, render, placeFocus, finishConversation, glass:glassSvg,
     identityForm, deleteControl, refreshMatches, markVisit
   });
 }
@@ -1298,7 +1290,7 @@ if (window.Perfil) Perfil.init({
 });
 showWelcome();
 render();
-if (requestedProfile && window.Perfil) Perfil.open();
+if (requestedProfile && window.Perfil) Perfil.open(location.hash === '#perfil/estadisticas' ? 'estadisticas' : 'guardados');
 if (partida.phase === 'result' && respuestaId){
   loadMatches().then(() => {
     if (partida.phase !== 'result') return;

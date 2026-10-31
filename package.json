@@ -16,6 +16,7 @@
     "test:funcionamiento": "node tests/funcionamiento-browser.mjs",
     "test:paridad": "node tests/paridad-browser.mjs",
     "test:perfil": "node tests/perfil-browser.mjs",
+    "test:compartir": "node tests/compartir-browser.mjs",
     "test:vip": "node tests/vip-browser.mjs",
     "test:frutas": "node tests/frutas-barra-browser.mjs",
     "test:recorrido": "node tests/recorrido-browser.mjs",

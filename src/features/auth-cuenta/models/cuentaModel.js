@@ -68,6 +68,16 @@ export function createCuentaModel({url, key, getSession, saveSession, onSessionE
       ]);
     },
     saveRecipe(coctel, elecciones){ return upsert('cocteles_guardados', {coctel, elecciones}); },
+    async loadStatistics(){
+      // PostgREST limita cada respuesta; recorrer todas las páginas evita totales truncados.
+      const rows = [];
+      for (let offset = 0; ; offset += 500){
+        const page = await db('elecciones_personales', {}, '?select=id,coctel,elecciones,creado_at&order=creado_at.desc,id.desc&limit=500&offset=' + offset);
+        rows.push(...page);
+        if (page.length < 500) return rows;
+      }
+    },
+    saveSelection(entry){ return upsert('elecciones_personales', entry); },
     savePreferences(preferencias){ return upsert('perfiles_personales', {preferencias, actualizado_at:new Date().toISOString()}); },
     saveAvatar(coctel, personalidad){ return upsert('avatares_personales', {coctel, personalidad, actualizado_at:new Date().toISOString()}); },
     saveReaction(reaction){ return upsert('reacciones_cocteles', {...reaction, actualizado_at:new Date().toISOString()}); },

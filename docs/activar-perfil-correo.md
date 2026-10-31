@@ -23,6 +23,15 @@ En un despliegue estático, configurar las variables antes de compilar.
 
 ## Base de datos y correo
 
+Para activar las estadísticas personales, ejecutar también `Pour Decisions/migrations/005-estadisticas-personales.sql`
+en el SQL Editor de la base existente. Es aditiva y repetible; no requiere reiniciar los perfiles.
+El acceso **Ver mis estadísticas** del perfil abre `#perfil/estadisticas` con resultados,
+frecuencias por opción y los últimos 20 resultados. Cada usuario consulta solo sus propios datos mediante RLS.
+Se registran los resultados nuevos al descubrir un cóctel con sesión iniciada; si se descubre antes de entrar,
+se conserva el último resultado de esa visita para asociarlo al confirmar el correo.
+Los perfiles anteriores empiezan sin historial: las recetas guardadas no se convierten en partidas inventadas.
+Los registros que fallen quedan pendientes en el navegador, separados por cuenta, y se reintentan al actualizar estadísticas.
+
 1. Ejecutar `database/migrations/004-perfiles.sql` en SQL Editor del proyecto.
    Es una migración aditiva y repetible. No ejecutar `001-base.sql` sobre datos existentes.
 2. Activar el proveedor Email y permitir nuevos registros en Authentication.

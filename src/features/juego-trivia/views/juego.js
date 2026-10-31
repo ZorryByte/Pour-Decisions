@@ -1,3 +1,4 @@
+import {compartirCoctel} from './compartirCoctel.js';
 import * as calculosVaso from '../vaso/calculosVaso.js';
 import {createAlcoholView} from '../etapas/alcohol/alcoholView.js';
 import {createFrutasView} from '../etapas/frutas/frutasView.js';
@@ -739,7 +740,11 @@ window.Juego = (function(){
       card.addEventListener('keydown', function(ev){
         if (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight'){ ev.preventDefault(); fly(ev.key === 'ArrowLeft' ? 'left' : 'right'); }
       });
-      wrap.append(card, api.el('p', {class:'gesture-hint'}, 'Desliza o toca un lado. Izquierda: pasa. Derecha: invita.'));
+      const pass = api.el('button', {type:'button',class:'swipe-action reject'}, 'Pasar');
+      const invite = api.el('button', {type:'button',class:'swipe-action accept'}, 'Invitar');
+      pass.addEventListener('click', function(){ fly('left'); });
+      invite.addEventListener('click', function(){ fly('right'); });
+      wrap.append(card, api.el('div', {class:'swipe-actions'}, pass, invite), api.el('p', {class:'gesture-hint'}, 'También puedes deslizar la tarjeta.'));
     } else {
       const accepted = styleDeck().filter(c => api.styleDecisions[c.name] === true);
       const finish = api.el('div', {class:'deck-finish match-reveal'});
@@ -852,7 +857,7 @@ window.Juego = (function(){
     if (!card) return;
     let startX = 0, startY = 0, active = false, offset = 0;
     card.addEventListener('pointerdown', function(ev){
-      if (swipeBusy || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
+      if (swipeBusy || active || ev.isPrimary === false || (ev.pointerType === 'mouse' && ev.button !== 0)) return;
       if (window.gsap) window.gsap.killTweensOf(card);
       offset = window.gsap ? Number(window.gsap.getProperty(card, 'x')) || 0 : 0;
       startX = ev.clientX - offset; startY = ev.clientY; active = true;
@@ -876,6 +881,7 @@ window.Juego = (function(){
     }
     card.addEventListener('pointerup',function(ev){
       if (!active) { reset(); return; } active = false;
+      offset = ev.clientX - startX;
       if (Math.abs(offset) < 8 && Math.abs(ev.clientY - startY) < 8){
         const bounds = card.getBoundingClientRect();
         fly(ev.clientX < bounds.left + bounds.width / 2 ? 'left' : 'right');
@@ -883,6 +889,7 @@ window.Juego = (function(){
       else reset();
     });
     card.addEventListener('pointercancel',function(){ active = false; reset(); });
+    card.addEventListener('lostpointercapture',function(){ if (active){ active = false; reset(); } });
   }
   function motion(quiz, pin, entered){
     if (!gsapOn()) return;
@@ -1157,39 +1164,7 @@ window.Juego = (function(){
     });
     return wrap;
   }
-  function shareBlock(){
-    const wrap = api.el('section', {class:'block result-share'});
-    const btn = api.el('button', {class:'btn', type:'button'}, 'Compartir mi cóctel');
-    const status = api.el('p', {class:'share-note', id:'share-status', role:'status'});
-    btn.addEventListener('click', async function(){
-      const perfil = archetype();
-      const text = 'Yo soy ' + perfil.nombre + ', de ' + perfil.elementoNombre + '. ¿Con quién coincides tú?';
-      const url = location.origin + location.pathname + location.search;
-      try {
-        if (navigator.share){
-          await navigator.share({text:text, url:url});
-          return;
-        }
-      } catch (e) {
-        if (e && e.name === 'AbortError') return;
-      }
-      const full = text + ' ' + url;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText){
-          await navigator.clipboard.writeText(full);
-          status.textContent = 'Listo, copiado.';
-          return;
-        }
-      } catch (e) { /* sigue el campo */ }
-      status.textContent = '';
-      const box = api.el('input', {type:'text', readonly:'true', value:full, 'aria-label':'Texto para compartir'});
-      status.append(box);
-      box.focus();
-      box.select();
-    });
-    wrap.append(btn, status);
-    return wrap;
-  }
+  function shareBlock(){ return compartirCoctel(api); }
   function humorBlock(){
     const wrap = api.el('section', {class:'block result-humor'});
     const found = new Set([...loadSet('cocteles_perfiles_v2')].filter(id => Object.hasOwn(ARCH, id)));
@@ -1206,11 +1181,15 @@ window.Juego = (function(){
       type:'button'
     }, 'Hoy quiero algo atrevido');
     function setHumor(dir){
+      const scrollY = window.scrollY;
       api.humor = api.humor === dir ? 0 : dir;
       api.reveal = false;
       api.moveFocus = false;
       api.persist();
       api.render();
+      const buttons = api.app.querySelectorAll('.result-humor button');
+      buttons[dir === -1 ? 0 : 1]?.focus({preventScroll:true});
+      window.scrollTo(0, scrollY);
     }
     suave.setAttribute('aria-pressed', String(api.humor === -1));
     atrevido.setAttribute('aria-pressed', String(api.humor === 1));
@@ -1308,8 +1287,8 @@ window.Juego = (function(){
   }
   function mountResult(follow){
     const extra = api.el('div', {class:'result-extra'});
-    extra.append(matchesBlock(), shareBlock(), humorBlock(), badgeBlock(), noteBlock());
-    follow.prepend(extra);
+    extra.append(matchesBlock(), shareBlock(), humorBlock(), noteBlock(), badgeBlock());
+    follow.querySelector('.result-recipe').after(extra);
     if (gsapOn()){
       try {
         window.gsap.from(extra.querySelectorAll('.badge.is-new'), {

@@ -7,7 +7,7 @@ import {createServer as createViteServer} from 'vite';
 let dev;
 import {Browser, Page} from '../.agents/skills/design-taste-frontend/scripts/lib/cdp.mjs';
 
-const root = resolve('.'), records = {perfiles_personales:[], cocteles_guardados:[], reacciones_cocteles:[], avatares_personales:[]};
+const root = resolve('.'), records = {perfiles_personales:[], cocteles_guardados:[], reacciones_cocteles:[], avatares_personales:[], elecciones_personales:[]};
 const calls = []; let failFavorite = false, failAvatar = false, failPreferences = false, failRemoval = false, refreshes = 0;
 const session = (id = 'person-a') => ({access_token:'access-' + id, refresh_token:'refresh-' + id, expires_in:3600, user:{id, email:id + '@example.test'}});
 const server = createServer(async (req,res) => {
@@ -38,7 +38,7 @@ const server = createServer(async (req,res) => {
     if (table === 'avatares_personales' && failAvatar){ failAvatar = false; return json({code:'connection'},503); }
     if (table === 'perfiles_personales' && failPreferences){ failPreferences = false; return json({code:'connection'},503); }
     if (table === 'avatares_personales' && !records.cocteles_guardados.some(r => r.usuario_id === owner && r.coctel === data.coctel)) return json({code:'23503'},409);
-    const index = records[table].findIndex(r => r.usuario_id === owner && (['perfiles_personales','avatares_personales'].includes(table) || r.coctel === data.coctel));
+    const index = records[table].findIndex(r => r.usuario_id === owner && (table === 'elecciones_personales' ? r.id === data.id : ['perfiles_personales','avatares_personales'].includes(table) || r.coctel === data.coctel));
     if (index < 0) records[table].push({...data, creado_at:new Date().toISOString()}); else records[table][index] = {...records[table][index], ...data};
     return json(null);
   }
@@ -59,7 +59,7 @@ Object.defineProperties(window, {
   choca:{configurable:true,get:()=>choca}, enterGame:{configurable:true,get:()=>enterGame},
   welcomeScreen:{configurable:true,get:()=>welcomeScreen}, app:{configurable:true,get:()=>app}
 });`;
-dev=await createViteServer({server:{hmr:false,watch:{ignored:['**/*']},middlewareMode:true},plugins:[{name:'cuenta-solo-pruebas',enforce:'pre',transform(code,id){
+dev=await createViteServer({server:{hmr:false,ws:{server},watch:{ignored:['**/*']},middlewareMode:true},plugins:[{name:'cuenta-solo-pruebas',enforce:'pre',transform(code,id){
   if(!id.replaceAll('\\','/').endsWith('/src/app/iniciarSistema.js'))return;
   const apiUrl='http://127.0.0.1:'+server.address().port;
   return code.replace(/const SUPABASE_URL = [^;]*;/, 'const SUPABASE_URL = new URLSearchParams(location.search).get("qa")==="connected" ? '+JSON.stringify(apiUrl)+' : "";')
@@ -77,7 +77,7 @@ async function until(fn, description, argument){
 }
 async function click(text){
   await page.eval(label => {
-    const b = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === label && !b.disabled);
+    const b = [...document.querySelectorAll('button')].find(b => (b.textContent.trim() === label || b.getAttribute('aria-label') === label) && !b.disabled);
     if (!b) throw new Error('Button missing: ' + label); b.click();
   }, text);
 }
@@ -145,6 +145,23 @@ try {
   await until(() => !!document.querySelector('.profile-recipe') && !document.querySelector('.profile-pending'), 'saved after retry');
   assert.equal(records.cocteles_guardados.length,1);
   assert.equal(records.cocteles_guardados[0].coctel, selected);
+  await click('Ver mis estadísticas');
+  await until(() => !!document.querySelector('.profile-stats-summary'), 'personal statistics');
+  assert.equal(records.elecciones_personales.length, 1, 'guest result follows explicit account login');
+  assert.equal(await page.eval(() => location.hash), '#perfil/estadisticas');
+  assert.equal(await page.eval(() => document.querySelectorAll('.profile-recipe').length), 0, 'exclusive statistics view');
+  assert.equal(await page.eval(() => document.querySelector('.profile-stats-summary dd').textContent), '1');
+  for (const width of [1440,768,390]){
+    await page.setViewport({width,height:1000,mobile:width<500});
+    assert(await page.eval(() => document.documentElement.scrollWidth <= innerWidth), 'statistics no overflow ' + width);
+    await page.screenshot({path:'artifacts/perfil/estadisticas-' + width + '.png',fullPage:true});
+  }
+  await click('Actualizar estadísticas');
+  await until(() => !!document.querySelector('.profile-stats-summary'), 'refresh statistics');
+  assert.equal(records.elecciones_personales.length, 1, 'refresh does not duplicate results');
+  await click('Volver a mi perfil');
+  assert.equal(await page.eval(() => document.querySelector('.profile-stats-summary')),null, 'statistics hidden after returning');
+  await page.setViewport({width:1440,height:1000});
   assert.equal(records.avatares_personales[0].coctel,selected);
   assert.equal(await page.eval(() => document.querySelector('.profile-identity .chibi-face').outerHTML),originalFace,'avatar has the original result face');
   assert.equal(await page.eval(() => getComputedStyle(document.querySelector('.profile-identity .crystal')).fill),'rgb(255, 253, 240)','avatar keeps original crystal color');
@@ -154,7 +171,9 @@ try {
   assert.equal(records.reacciones_cocteles[0].reaccion,'like');
   assert.equal(records.reacciones_cocteles[0].probado_gusto,false);
   await click('Lo probé y me gustó');
-  await until(() => document.body.innerText.includes('Lo probé y me gustó · anotado'),'tasted independent');
+  await until(() => document.querySelector('.profile-reactions [aria-label="Lo probé y me gustó"]')?.getAttribute('aria-pressed') === 'true','tasted independent');
+  assert.equal(await page.eval(() => document.querySelectorAll('.profile-reactions.is-compact button').length),3,'Three compact reaction controls');
+  assert.equal(records.reacciones_cocteles[0].reaccion,'like','Tasted does not overwrite interest');
   assert.equal(records.reacciones_cocteles[0].probado_gusto,true);
   await page.screenshot({path:'artifacts/perfil/coleccion-desktop.png'});
   for (const width of [768,390]){
@@ -199,7 +218,7 @@ try {
   assert.equal(records.avatares_personales.length,1,'one favorite per account');
   assert.equal(records.avatares_personales[0].coctel,secondFavorite);
   await click('Mis cócteles');
-  await click('Mi favorito · Quitar');
+  await click('Favorito');
   await until(() => !!document.querySelector('.profile-avatar.is-empty'),'remove favorite keeps collection');
   assert.equal(records.cocteles_guardados.length,2);
   await click('Quitar de mi colección');
@@ -286,6 +305,25 @@ try {
   await until(() => !!document.querySelector('#profile-email'),'logout');
   assert.equal(await page.eval(() => localStorage.getItem('cocteles_cuenta_v1')),null);
   assert.equal(await page.eval(() => document.querySelectorAll('.profile-history-row').length),0);
+  // Una cuenta distinta entra por enlace directo y no ve las estadísticas anteriores.
+  await page.eval(value => localStorage.setItem('cocteles_cuenta_v1', JSON.stringify(value)), {...session('person-b'),expires_at:Math.floor(Date.now()/1000)+3600});
+  await page.goto('about:blank',{settleMs:0});
+  await page.goto(url + '/?qa=connected#perfil/estadisticas',{settleMs:50});
+  await until(() => !!document.querySelector('.profile-empty'), 'empty statistics of another account');
+  assert.equal(await page.eval(() => document.querySelector('.profile-stats-summary')),null);
+  assert(await page.eval(() => document.body.innerText.includes('Todavía no hay elecciones registradas')));
+  await page.screenshot({path:'artifacts/perfil/estadisticas-vacias.png',fullPage:true});
+  await page.eval(() => {
+    Perfil.recordResult(C[0].n); Perfil.recordResult(C[0].n); Perfil.render();
+  });
+  await until(() => !document.querySelector('.profile-page .btn:disabled'), 'saved signed-in statistics');
+  await click('Actualizar estadísticas');
+  await until(() => !!document.querySelector('.profile-stats-summary'), 'signed-in statistics loaded');
+  assert.equal(records.elecciones_personales.filter(row => row.usuario_id === 'person-b').length,1,'repeated render does not duplicate');
+  assert.equal(await page.eval(() => document.querySelector('.profile-stats-summary dd').textContent),'1','statistics scoped to current account');
+  await click('Volver al inicio'); await click('Mi perfil');
+  await until(() => !!document.querySelector('.profile-identity'), 'general entry opens profile');
+  assert.equal(await page.eval(() => document.querySelector('.profile-stats-summary')),null,'general profile entry never opens statistics');
   assert.equal(page.consoleErrors.length,0,JSON.stringify(page.consoleErrors));
   console.log('PASS: acceso, resultado sin registro, reacciones, OTP, avatar, favorito, preferencias, tres insignias destacadas, límite, cambio, persistencia, recarga y salida.');
   console.log('PASS: capturas 1440/768/390, sin desbordamiento ni errores de consola. API aislada: ' + calls.length + ' solicitudes.');

@@ -15,6 +15,15 @@ async function setup({session=makeSession(),handler=()=>response([]),url=' https
   return {model,calls,saved,get session(){return current;},get expired(){return expired;},setSession:value=>{current=value;}};
 }
 
+test('Las estadísticas paginan todo el historial y guardan con id estable y propietario autenticado', async () => {
+  const ctx = await setup({handler:call => response(call.options.method === 'POST' ? null : new URL(call.url).searchParams.get('offset') === '0' ? Array.from({length:500}, (_, id) => ({id})) : [{id:500}])});
+  assert.equal((await ctx.model.loadStatistics()).length,501);
+  await ctx.model.saveSelection({id:'stable-id',coctel:'Mojito',elecciones:{fruta:['Limón']},usuario_id:'otra-persona'});
+  assert.equal(ctx.calls[2].body.id,'stable-id');
+  assert.equal(ctx.calls[2].body.usuario_id,'person-a');
+  assert(ctx.calls[2].options.headers.Prefer.includes('resolution=merge-duplicates'));
+});
+
 test('Sin configurar no hace peticiones y conserva el código de error existente',async()=>{
   const {model,calls}=await setup({url:''});assert.equal(model.configured(),false);
   await assert.rejects(model.requestCode('a@example.test'),error=>error.code==='PGRST205');assert.equal(calls.length,0);
